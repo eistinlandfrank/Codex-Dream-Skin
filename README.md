@@ -82,14 +82,14 @@ cd macos
   --id preset-arina-hashimoto
 ```
 
-Windows 使用本地主题仓库与系统托盘，并会预置同一套「桥本有菜」。首次从仓库使用：
+Windows 使用同一套通用主题仓库与系统托盘，但发行包只预置 Toki 兔女郎主题。首次从仓库使用：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\windows\scripts\install-dream-skin.ps1
+powershell -ExecutionPolicy Bypass -File .\windows\scripts\install-toki-dream-skin.ps1
 powershell -ExecutionPolicy Bypass -File .\windows\scripts\start-dream-skin.ps1
 ```
 
-启动后可直接从「已保存主题 → 桥本有菜」切换；不需要跨目录手动导入。托盘里的「更换背景图」仍可导入你自己的纯背景，保存后继续一键切换。
+启动后会直接使用 Toki；同一安装命令也会部署仓库内的 Toki Bunny v2 动态桌宠，首次在「设置 → Pets → Refresh」中选择一次即可。托盘里的「更换背景图」仍可导入你自己的纯背景，保存后继续一键切换。上面的「桥本有菜」预设仅保留在 macOS 发行包中。
 
 > 可下载的用户源图是 [`docs/images/presets/arina-hashimoto-source.png`](./docs/images/presets/arina-hashimoto-source.png)（`1672 × 941`）；macOS 一键预设使用 [`macos/presets/preset-arina-hashimoto/background.jpg`](./macos/presets/preset-arina-hashimoto/background.jpg)（规范化派生 `2560 × 1440`）。上面两个效果图包含真实 UI，**只作预览，绝不能当背景导入**。背景为用户提供的 AI 生成示例，不代表 OpenAI/Codex 官方视觉或背书；公开再分发前请确认人物与素材权利。
 
@@ -153,7 +153,7 @@ powershell -ExecutionPolicy Bypass -File .\windows\scripts\start-dream-skin.ps1
 | 平台 | 目录 | 入口 |
 |------|------|------|
 | Apple Silicon / Intel Mac | [`macos/`](./macos/) | 双击 `Install Codex Dream Skin.command` |
-| Windows | [`windows/`](./windows/) | `scripts/install-dream-skin.ps1` → `start-dream-skin.ps1` |
+| Windows | [`windows/`](./windows/) | `scripts/install-toki-dream-skin.ps1` → `start-dream-skin.ps1` |
 
 更细的说明：
 

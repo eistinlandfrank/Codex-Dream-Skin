@@ -192,48 +192,59 @@ function Initialize-DreamSkinThemeStore {
   foreach ($directory in @($paths.Root, $paths.Active, $paths.Saved, $paths.Images)) {
     Ensure-DreamSkinManagedDirectory -Path $directory -Root $paths.Root
   }
+
   $assetRoot = Join-Path $SkillRoot 'assets'
-  $assetImage = Join-Path $assetRoot 'dream-reference.jpg'
-  Assert-DreamSkinImageFile -Path $assetImage
+  $bundled = Read-DreamSkinTheme -ThemeDirectory $assetRoot
+  if ("$($bundled.Theme.id)" -cne 'preset-toki-bunny-04' -or
+    "$($bundled.Theme.variant)" -cne 'toki') {
+    throw 'The bundled Windows theme must be the Toki preset.'
+  }
+  $assetImage = $bundled.ImagePath
+  $assetImageName = [System.IO.Path]::GetFileName($assetImage)
+
   $activeTheme = Join-Path $paths.Active 'theme.json'
   Assert-DreamSkinNoReparseComponents -Path $activeTheme
   if (-not (Test-Path -LiteralPath $activeTheme -PathType Leaf)) {
     Ensure-DreamSkinManagedDirectory -Path $paths.Active -Root $paths.Root
-    Assert-DreamSkinNoReparseComponents -Path (Join-Path $paths.Active 'dream-reference.jpg')
-    $activeImage = Join-Path $paths.Active 'dream-reference.jpg'
-    Copy-Item -LiteralPath (Join-Path $assetRoot 'dream-reference.jpg') `
-      -Destination $activeImage -Force
+    $activeImage = Join-Path $paths.Active $assetImageName
+    Assert-DreamSkinNoReparseComponents -Path $activeImage
+    Copy-Item -LiteralPath $assetImage -Destination $activeImage -Force
     Assert-DreamSkinNoReparseComponents -Path $activeImage
     Assert-DreamSkinImageFile -Path $activeImage
-    $imageArchive = Join-Path $paths.Images 'dream-reference.jpg'
+    $imageArchive = Join-Path $paths.Images $assetImageName
     Assert-DreamSkinNoReparseComponents -Path $imageArchive
-    Copy-Item -LiteralPath (Join-Path $assetRoot 'dream-reference.jpg') `
-      -Destination $imageArchive -Force
+    Copy-Item -LiteralPath $assetImage -Destination $imageArchive -Force
     Assert-DreamSkinNoReparseComponents -Path $imageArchive
     Assert-DreamSkinImageFile -Path $imageArchive
-    Assert-DreamSkinNoReparseComponents -Path $activeTheme
-    Copy-Item -LiteralPath (Join-Path $assetRoot 'theme.json') -Destination $activeTheme -Force
+    $activeMetadata = $bundled.Theme | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+    $activeMetadata.image = $assetImageName
+    Write-DreamSkinTheme -ThemeDirectory $paths.Active -Theme $activeMetadata
   }
-  $retiredPresetDirectory = Join-Path $paths.Saved 'preset-romantic-rose'
-  Assert-DreamSkinNoReparseComponents -Path $retiredPresetDirectory
-  if (Test-Path -LiteralPath $retiredPresetDirectory) {
-    Remove-Item -LiteralPath $retiredPresetDirectory -Recurse -Force
+
+  foreach ($retiredPresetId in @('preset-romantic-rose', 'preset-arina-hashimoto')) {
+    $retiredPresetDirectory = Join-Path $paths.Saved $retiredPresetId
+    Assert-DreamSkinNoReparseComponents -Path $retiredPresetDirectory
+    if (Test-Path -LiteralPath $retiredPresetDirectory) {
+      Remove-Item -LiteralPath $retiredPresetDirectory -Recurse -Force
+    }
   }
-  $presetDirectory = Join-Path $paths.Saved 'preset-arina-hashimoto'
+
+  $presetDirectory = Join-Path $paths.Saved "$($bundled.Theme.id)"
   $presetTheme = Join-Path $presetDirectory 'theme.json'
   Assert-DreamSkinNoReparseComponents -Path $presetDirectory
   Assert-DreamSkinNoReparseComponents -Path $presetTheme
   if (-not (Test-Path -LiteralPath $presetTheme -PathType Leaf)) {
     Ensure-DreamSkinManagedDirectory -Path $presetDirectory -Root $paths.Root
-    $presetImage = Join-Path $presetDirectory 'dream-reference.jpg'
+    $presetImage = Join-Path $presetDirectory $assetImageName
     Assert-DreamSkinNoReparseComponents -Path $presetImage
-    Copy-Item -LiteralPath (Join-Path $assetRoot 'dream-reference.jpg') `
-      -Destination $presetImage -Force
+    Copy-Item -LiteralPath $assetImage -Destination $presetImage -Force
     Assert-DreamSkinNoReparseComponents -Path $presetImage
     Assert-DreamSkinImageFile -Path $presetImage
-    Assert-DreamSkinNoReparseComponents -Path $presetTheme
-    Copy-Item -LiteralPath (Join-Path $assetRoot 'theme.json') -Destination $presetTheme -Force
+    $presetMetadata = $bundled.Theme | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+    $presetMetadata.image = $assetImageName
+    Write-DreamSkinTheme -ThemeDirectory $presetDirectory -Theme $presetMetadata
   }
+
   $null = Read-DreamSkinTheme -ThemeDirectory $paths.Active
   return $paths
 }

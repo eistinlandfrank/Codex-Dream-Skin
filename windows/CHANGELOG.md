@@ -4,13 +4,14 @@
 
 ### 新增
 
+- Windows 发行包现在只内置并播种 Toki 兔女郎预设；旧的「桥本有菜」Windows 预设按固定 ID 退休，通用主题引擎、用户导入图片和用户自建主题继续保留。
+- 随仓库提供经过完整 v2 QA 的 Toki Bunny 动态桌宠及事务式安装器；重装会安全更新同一 ID，不会静默切换用户当前桌宠。
 - Windows 安装器会先校验并原子复制运行所需的 `assets/` 与 `scripts/` 到 `%LOCALAPPDATA%\CodexDreamSkin\engine`，启动、恢复和托盘快捷方式统一指向该受管副本；安装完成后可移动或删除源码克隆。重装前若旧托盘仍在运行，安装器会明确要求退出，避免新旧脚本混用。
 - 渲染层支持通用自适应图像主题：本地 Canvas 采样图像亮度、主色、焦点和比例，为壁纸层提供自适应色彩与构图建议；支持 `appearance: auto | light | dark`、`art.focusX/focusY`（`0..1`）、`art.safeArea: auto | left | right | center | none`、`art.taskMode: auto | ambient | banner | off`。外观壳仍由显式主题或原生外观信号决定。
 - 显式外观与艺术元数据优先于分析结果；超宽图默认任务横幅，普通比例图默认环境背景，`off` 可关闭任务页图像。分析完全在渲染器本地完成，不上传图片。
 - Windows 发行 payload 直接读取受管 `theme.json`，完整支持与 macOS 一致的外观、焦点、安全区和任务页模式契约，不再依赖预先设置的 renderer 全局变量。
 - 新增纯 PowerShell/Windows Forms 系统托盘入口，可快速查看状态、应用或暂停皮肤、更换背景、保存和切换主题、打开图片文件夹，以及执行完整恢复；不引入第三方依赖。
 - 新增 `%LOCALAPPDATA%\CodexDreamSkin` 主题仓库，用户图片会复制到受管目录，活动主题和已保存主题均保持图片与配置自包含。
-- Windows 首次安装会把 UI-free 的 2560 × 1440「桥本有菜」设为活动主题并播种到「已保存主题」，无需再从 macOS 目录手动导入。
 - 新增 `install-toki-dream-skin.ps1`，可把适配 1.2.0 外部引擎的 Toki 兔女郎主题、专用快捷方式与可切换预设一次性安装到其他 Windows 电脑；不修改 `app.asar` 或共享 Codex 配置。
 
 ### 修复
@@ -70,7 +71,7 @@
 
 ### 改进
 
-- 预置主题的稳定 ID 从 `preset-romantic-rose` 更名为 `preset-arina-hashimoto`；初始化只清理旧预置目录，继续保留用户自建主题。
+- Windows 预置主题统一为稳定 ID `preset-toki-bunny-04`；初始化只清理 `preset-romantic-rose` 与 `preset-arina-hashimoto` 两个固定旧内置目录，继续保留用户自建主题。
 - 默认端口被占用时自动在后续 100 个端口内选择空闲端口；显式指定的冲突端口仍安全失败。
 - injector 会等待首轮注入完成再判定启动成功；目标异常时使用有上限的指数退避和限频日志，减少后台唤醒和日志膨胀。
 - 明确要求 Node.js 22 或更新版本，并记录 `process.execPath`，兼容 PATH 中的启动转发程序。

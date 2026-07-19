@@ -14,7 +14,7 @@ try {
   $runtimeSourceRoot = Join-Path $temporaryRoot $runtimeSourceName
   $runtimeStateRoot = Join-Path $temporaryRoot 'runtime-state'
   New-Item -ItemType Directory -Path $runtimeSourceRoot | Out-Null
-  foreach ($directoryName in @('assets', 'scripts')) {
+  foreach ($directoryName in @('assets', 'pets', 'scripts')) {
     Copy-Item -LiteralPath (Join-Path $Root $directoryName) -Destination $runtimeSourceRoot `
       -Recurse -Force -ErrorAction Stop
   }
@@ -28,11 +28,13 @@ try {
   $engine = Install-DreamSkinRuntimeEngine -SkillRoot $runtimeSourceRoot -StateRoot $runtimeStateRoot
   $sourcePrefix = $runtimeSourceRoot.TrimEnd('\') + '\'
   $runtimeSourceFiles = @(
-    Get-ChildItem -LiteralPath (Join-Path $runtimeSourceRoot 'assets'), (Join-Path $runtimeSourceRoot 'scripts') `
+    Get-ChildItem -LiteralPath (Join-Path $runtimeSourceRoot 'assets'), (Join-Path $runtimeSourceRoot 'pets'), `
+      (Join-Path $runtimeSourceRoot 'scripts') `
       -Recurse -File -Force
   )
   $runtimeEngineFiles = @(
-    Get-ChildItem -LiteralPath (Join-Path $engine.Root 'assets'), (Join-Path $engine.Root 'scripts') `
+    Get-ChildItem -LiteralPath (Join-Path $engine.Root 'assets'), (Join-Path $engine.Root 'pets'), `
+      (Join-Path $engine.Root 'scripts') `
       -Recurse -File -Force
   )
   if ($runtimeSourceFiles.Count -ne $runtimeEngineFiles.Count -or
@@ -96,7 +98,7 @@ try {
 
   $invalidRuntimeRoot = Join-Path $temporaryRoot 'invalid-runtime-source'
   New-Item -ItemType Directory -Path $invalidRuntimeRoot | Out-Null
-  foreach ($directoryName in @('assets', 'scripts')) {
+  foreach ($directoryName in @('assets', 'pets', 'scripts')) {
     Copy-Item -LiteralPath (Join-Path $runtimeSourceRoot $directoryName) -Destination $invalidRuntimeRoot `
       -Recurse -Force -ErrorAction Stop
   }
@@ -635,31 +637,36 @@ try {
 
   $themeStateRoot = Join-Path $temporaryRoot 'theme-state'
   $legacyPresetDirectory = Join-Path $themeStateRoot 'themes\preset-romantic-rose'
+  $legacyArinaPresetDirectory = Join-Path $themeStateRoot 'themes\preset-arina-hashimoto'
   $customThemeDirectory = Join-Path $themeStateRoot 'themes\custom-keepme'
-  New-Item -ItemType Directory -Force -Path $legacyPresetDirectory, $customThemeDirectory | Out-Null
+  New-Item -ItemType Directory -Force `
+    -Path $legacyPresetDirectory, $legacyArinaPresetDirectory, $customThemeDirectory | Out-Null
   [System.IO.File]::WriteAllText((Join-Path $legacyPresetDirectory 'retired-marker'), 'retired', $utf8NoBom)
+  [System.IO.File]::WriteAllText((Join-Path $legacyArinaPresetDirectory 'retired-marker'), 'retired', $utf8NoBom)
   [System.IO.File]::WriteAllText((Join-Path $customThemeDirectory 'keep-marker'), 'keep', $utf8NoBom)
   $themePaths = Initialize-DreamSkinThemeStore -SkillRoot $Root -StateRoot $themeStateRoot
   if ((Test-Path -LiteralPath $legacyPresetDirectory) -or
+    (Test-Path -LiteralPath $legacyArinaPresetDirectory) -or
     -not (Test-Path -LiteralPath (Join-Path $customThemeDirectory 'keep-marker'))) {
-    throw 'Theme-store migration did not retire the old preset ID while preserving custom themes.'
+    throw 'Theme-store migration did not retire fixed old preset IDs while preserving custom themes.'
   }
   $initialTheme = Read-DreamSkinTheme -ThemeDirectory $themePaths.Active
-  if ($initialTheme.Theme.id -cne 'preset-arina-hashimoto' -or
-    $initialTheme.Theme.name -cne '桥本有菜' -or
-    $initialTheme.Theme.appearance -cne 'auto' -or
+  if ($initialTheme.Theme.id -cne 'preset-toki-bunny-04' -or
+    $initialTheme.Theme.name -cne '飞鸟马时 · Toki 兔女郎' -or
+    $initialTheme.Theme.variant -cne 'toki' -or
+    $initialTheme.Theme.appearance -cne 'light' -or
     $initialTheme.Theme.art.safeArea -cne 'left' -or
     $initialTheme.Theme.art.taskMode -cne 'ambient' -or
-    [System.IO.Path]::GetExtension($initialTheme.ImagePath) -cne '.jpg') {
-    throw 'Default Windows theme did not seed the Arina Hashimoto wallpaper contract.'
+    [System.IO.Path]::GetExtension($initialTheme.ImagePath) -cne '.png') {
+    throw 'Default Windows theme did not seed the Toki wallpaper contract.'
   }
   $preseededThemes = @(Get-DreamSkinSavedThemes -StateRoot $themeStateRoot)
   if ($preseededThemes.Count -ne 1 -or
-    $preseededThemes[0].Id -cne 'preset-arina-hashimoto' -or
-    $preseededThemes[0].Name -cne '桥本有菜') {
-    throw 'Arina Hashimoto was not preseeded in the Windows saved-theme menu.'
+    $preseededThemes[0].Id -cne 'preset-toki-bunny-04' -or
+    $preseededThemes[0].Name -cne '飞鸟马时 · Toki 兔女郎') {
+    throw 'Toki was not the only preseeded Windows theme.'
   }
-  $updatedTheme = Set-DreamSkinActiveTheme -ImagePath (Join-Path $Root 'assets\dream-reference.jpg') `
+  $updatedTheme = Set-DreamSkinActiveTheme -ImagePath (Join-Path $Root 'assets\toki-reference.png') `
     -Theme $null -Name '测试主题' -StateRoot $themeStateRoot
   if ($updatedTheme.Theme.name -cne '测试主题' -or
     $updatedTheme.Theme.id -cne 'custom' -or
@@ -682,8 +689,8 @@ try {
 
   $outsideTheme = Join-Path $temporaryRoot 'outside-theme'
   New-Item -ItemType Directory -Path $outsideTheme | Out-Null
-  Copy-Item -LiteralPath (Join-Path $Root 'assets\dream-reference.jpg') `
-    -Destination (Join-Path $outsideTheme 'dream-reference.jpg')
+  Copy-Item -LiteralPath (Join-Path $Root 'assets\toki-reference.png') `
+    -Destination (Join-Path $outsideTheme 'toki-reference.png')
   Copy-Item -LiteralPath (Join-Path $Root 'assets\theme.json') `
     -Destination (Join-Path $outsideTheme 'theme.json')
   $junctionTheme = Join-Path $themePaths.Saved 'junction-escape'
@@ -744,7 +751,7 @@ try {
   New-Item -ItemType Directory -Path $tokiAssetDirectory | Out-Null
   Copy-Item -LiteralPath (Join-Path $Root 'assets\toki-reference.png') `
     -Destination (Join-Path $tokiAssetDirectory 'toki-reference.png')
-  Copy-Item -LiteralPath (Join-Path $Root 'assets\toki-theme.json') `
+  Copy-Item -LiteralPath (Join-Path $Root 'assets\theme.json') `
     -Destination (Join-Path $tokiAssetDirectory 'theme.json')
   $tokiTheme = Read-DreamSkinTheme -ThemeDirectory $tokiAssetDirectory
   $tokiImageHash = (Get-FileHash -LiteralPath $tokiTheme.ImagePath -Algorithm SHA256).Hash
@@ -754,6 +761,11 @@ try {
     $tokiTheme.Theme.brandTitle -cne 'Toki Codex' -or
     $tokiImageHash -cne '0A5243DE641A76EF3C3A43EF82BDA9CAFD8ED3459656BA08C7904A3A8DA028C3') {
     throw 'The bundled Toki theme contract or pinned reference art changed unexpectedly.'
+  }
+  foreach ($retiredAsset in @('dream-reference.jpg', 'toki-theme.json')) {
+    if (Test-Path -LiteralPath (Join-Path $Root "assets\$retiredAsset")) {
+      throw "Windows still bundles a retired or duplicate theme asset: $retiredAsset"
+    }
   }
 
   $css = Read-DreamSkinUtf8File -Path (Join-Path $Root 'assets\dream-skin.css')
@@ -863,6 +875,7 @@ try {
   foreach ($requiredRendererBehavior in @(
     'dream-home-utility', 'artMetadata', 'detectShellAppearance', 'ensureTokiDom',
     'dream-toki-settings-row', 'dream-toki-polaroid', 'dream-toki-card',
+    'dream-toki-fallback-cards', 'seedTokiPrompt',
     'document.visibilityState === "visible"', '}, 30000)'
   )) {
     if (-not $rendererSource.Contains($requiredRendererBehavior)) {
@@ -938,6 +951,9 @@ try {
   $imageMetadataTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $PSScriptRoot 'image-metadata.test.mjs'))
   if ($imageMetadataTest.ExitCode -ne 0) { throw 'Image metadata regression test failed.' }
+
+  & (Join-Path $PSScriptRoot 'pet-package.test.ps1')
+  & (Join-Path $PSScriptRoot 'toki-pet-package.test.ps1')
 
   Write-Host 'PASS: config transactions, restore scoping, state safety, argument quoting, and loopback CDP validation.'
 } finally {

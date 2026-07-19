@@ -16,21 +16,7 @@ Run the installer after Codex has fully exited. Normal use does not require admi
 
 ## Install
 
-Open PowerShell in the repository's `windows` directory and run:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dream-skin.ps1
-```
-
-The installer validates the official Codex Store package and Node.js, saves a recoverable appearance baseline, and initializes the local theme store. By default it also creates these shortcuts:
-
-- `Codex Dream Skin`: launch or reapply the skin.
-- `Codex Dream Skin - Tray`: open the system tray theme controls.
-- `Codex Dream Skin - Restore`: restore the stock appearance and close the saved CDP session.
-
-### Install the Toki bunny theme
-
-This branch includes the complete Toki theme for Dream Skin 1.2.0: continuous home/task backgrounds, the original `Toki Codex` wordmark, native project-folder icons, theme controls, and safe restore behavior. It is loaded by the external engine and does not modify `app.asar`.
+The Windows distribution bundles only the complete Toki bunny theme: continuous home/task backgrounds, the original `Toki Codex` wordmark, native project-folder icons, theme controls, and safe restore behavior. The generic theme engine and support for user-imported, saved, and switchable backgrounds remain available. Nothing modifies `app.asar`.
 
 To deploy it on another PC, install the official Microsoft Store Codex app and [Node.js 22 or newer](https://nodejs.org/), close Codex and any older Dream Skin tray, then run:
 
@@ -40,14 +26,16 @@ cd .\Codex-Dream-Skin\windows
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-dream-skin.ps1
 ```
 
-Launch `Toki Codex（飞鸟马时）` from the desktop after installation. Theme-control and restore shortcuts are installed with it, and the source checkout can then be moved or removed.
+The installer validates the official Codex Store package and Node.js, initializes Toki as the only bundled preset, installs the validated v2 Toki Bunny animated pet, and creates `Toki Codex（飞鸟马时）`, `Toki Codex - 主题控制`, and `Toki Codex - 恢复官方外观` shortcuts. Launch the main shortcut from the desktop after installation; the source checkout can then be moved or removed.
+
+The pet package is installed safely under `%USERPROFILE%\.codex\pets\toki-bunny` (or the matching `CODEX_HOME`), but the installer does not silently change the selected pet. After the first deployment, open **Codex Settings → Pets → Refresh** and select **Toki Bunny**. Later installs atomically update the same package.
 
 `Bypass` in the install command applies only to that user-initiated installer process. The installer verifies the runtime copy with SHA-256, then clears download-zone markers only from managed PowerShell copies under `%LOCALAPPDATA%\CodexDreamSkin\engine`. Daily shortcuts use `RemoteSigned` and do not override system or enterprise Group Policy.
 
 Pass `-Port` during installation to use a fixed custom port. Valid ports range from `1024` through `65535`.
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dream-skin.ps1 -Port 9444
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-dream-skin.ps1 -Port 9444
 ```
 
 ## Update
@@ -56,7 +44,7 @@ Exit the Dream Skin tray and close Codex, update the checkout (`git pull`, or do
 
 ## Launch and verify
 
-The `Codex Dream Skin` shortcut is the recommended launcher. It asks for confirmation before restarting an open Codex window.
+The `Toki Codex（飞鸟马时）` shortcut is the recommended launcher. It asks for confirmation before restarting an open Codex window.
 
 Command-line launch:
 
@@ -83,7 +71,7 @@ Next, use the generated screenshot to check horizontal overflow and text contras
 
 ## Change and save themes
 
-Open `Codex Dream Skin - Tray` to:
+Open `Toki Codex - 主题控制` to:
 
 - Import a PNG, JPEG, or WebP background.
 - Save the active theme and switch through saved themes.
@@ -123,6 +111,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\restore-dream-
 | Injector error log | `%LOCALAPPDATA%\CodexDreamSkin\injector-error.log` |
 | Verification log | `%LOCALAPPDATA%\CodexDreamSkin\verify.log` |
 | Codex configuration | `%USERPROFILE%\.codex\config.toml` |
+| Toki animated pet | `%USERPROFILE%\.codex\pets\toki-bunny` |
 
 See [`../docs/platforms.md`](../docs/platforms.md) for the complete platform path reference.
 
@@ -156,7 +145,7 @@ When `-Port` is omitted, the launcher searches for a free port beginning at `933
 
 ### Verification cannot find a CDP endpoint
 
-Launch Codex through the `Codex Dream Skin` shortcut, then run verification. A normal Codex launch does not open the debug session used by Dream Skin.
+Launch Codex through the `Toki Codex（飞鸟马时）` shortcut, then run verification. A normal Codex launch does not open the debug session used by Dream Skin.
 
 ### The skin stops working after a Codex update
 

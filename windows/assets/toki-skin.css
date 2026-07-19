@@ -247,6 +247,8 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) m
 
 html.codex-dream-skin.dream-skin-toki .dream-home {
   --thread-content-max-width: min(1210px, calc(100cqw - 48px)) !important;
+  --toki-hero-height: clamp(390px, 60cqh, 520px);
+  position: relative !important;
   color: var(--dream-text) !important;
   background: transparent !important;
 }
@@ -257,16 +259,18 @@ html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child {
 }
 
 html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child {
-  flex: 0 0 clamp(420px, 44cqw, 540px) !important;
-  min-height: 420px !important;
+  flex: 0 0 var(--toki-hero-height) !important;
+  min-height: var(--toki-hero-height) !important;
 }
 
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child {
   width: calc(100% - 48px) !important;
   max-width: 1210px !important;
-  height: clamp(250px, 29cqw, 350px) !important;
-  min-height: 250px !important;
-  /* Native suggestion cards are absolutely positioned below this hero. */
+  height: var(--toki-hero-height) !important;
+  min-height: var(--toki-hero-height) !important;
+  /* Native suggestion cards are absolutely positioned below this hero.
+     That remains true on narrow or short layouts; desktop keeps the same
+     React portal but paints it in the lower part of the hero. */
   overflow: visible !important;
   border: 1px solid rgba(97, 185, 222, .36) !important;
   border-radius: 24px !important;
@@ -293,7 +297,15 @@ html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-spec
 }
 
 html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
-  padding: 32px 42px !important;
+  padding: 32px 42px 194px !important;
+}
+
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+  .dream-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+  inset-inline: 18px !important;
+  top: auto !important;
+  bottom: 18px !important;
+  margin-top: 0 !important;
 }
 
 html.codex-dream-skin.dream-skin-toki .dream-home [data-feature="game-source"] {
@@ -318,10 +330,13 @@ html.codex-dream-skin.dream-skin-toki .dream-home [data-feature="game-source"] b
    disabled attributes as soon as the home route is mounted. */
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-toki-card {
   position: relative !important;
-  min-height: 126px !important;
-  padding: 17px 15px !important;
+  min-height: 142px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 18px 15px 21px !important;
   overflow: hidden !important;
   color: #20496f !important;
+  text-align: center !important;
   border: 1px solid rgba(99, 179, 218, .29) !important;
   border-radius: 18px !important;
   box-shadow: 0 8px 21px rgba(42, 119, 166, .10), inset 0 0 0 1px rgba(255, 255, 255, .62) !important;
@@ -364,6 +379,23 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-card:hover {
   transform: none !important;
 }
 
+html.codex-dream-skin.dream-skin-toki .dream-toki-card:focus-visible {
+  outline: 3px solid rgba(69, 189, 221, .30) !important;
+  outline-offset: 2px !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-card > span:first-child {
+  justify-content: center !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-card > span:nth-child(2) {
+  min-height: 38px !important;
+  margin-top: 9px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  text-align: center !important;
+}
+
 html.codex-dream-skin.dream-skin-toki .dream-toki-card > span:first-child > span:first-child {
   width: 44px !important;
   height: 44px !important;
@@ -400,6 +432,24 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-card span {
   text-shadow: none !important;
 }
 
+html.codex-dream-skin.dream-skin-toki .dream-toki-fallback-cards {
+  position: absolute !important;
+  z-index: 3 !important;
+  top: calc(18px + var(--toki-hero-height) - 160px) !important;
+  left: 50% !important;
+  width: calc(100% - 84px) !important;
+  max-width: 1174px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  transform: translateX(-50%) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-fallback-card {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 /* Composer and task routes ---------------------------------------------- */
 html.codex-dream-skin.dream-skin-toki .composer-surface-chrome {
   color: var(--dream-text) !important;
@@ -417,6 +467,15 @@ html.codex-dream-skin.dream-skin-toki .dream-home-utility {
 
 html.codex-dream-skin.dream-skin-toki .dream-home:has(.dream-home-utility) .composer-surface-chrome {
   border-top: 0 !important;
+}
+
+@media (min-width: 1181px) and (min-height: 721px) {
+  html.codex-dream-skin.dream-skin-toki .dream-toki-composer-wrap {
+    width: calc(100% - clamp(184px, 16cqw, 214px)) !important;
+    max-width: none !important;
+    margin-right: auto !important;
+    margin-left: 24px !important;
+  }
 }
 
 html.codex-dream-skin.dream-skin-toki .ProseMirror {
@@ -471,9 +530,9 @@ html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
 html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid {
   position: absolute !important;
   z-index: 4 !important;
-  right: 24px !important;
-  bottom: 92px !important;
-  width: 138px !important;
+  right: 18px !important;
+  bottom: 18px !important;
+  width: clamp(146px, 12.8vw, 164px) !important;
   margin: 0 !important;
   padding: 9px 9px 11px !important;
   color: #396d92 !important;
@@ -567,6 +626,14 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     border-radius: 18px !important;
   }
 
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+    .dream-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+    inset-inline: 0 !important;
+    top: 100% !important;
+    bottom: auto !important;
+    margin-top: 16px !important;
+  }
+
   html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
     padding: 23px 26px !important;
   }
@@ -575,6 +642,57 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     min-height: 106px !important;
     padding: 12px 10px !important;
     border-radius: 15px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki .dream-home:has(.dream-toki-fallback-cards)
+    > div:first-child > div:first-child {
+    flex-basis: 490px !important;
+    min-height: 490px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki .dream-toki-fallback-cards {
+    top: 259px !important;
+    width: calc(100% - 34px) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 901px) {
+  html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid {
+    display: none !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child {
+    flex-basis: 390px !important;
+    min-height: 390px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+    .dream-home > div:first-child > div:first-child > div:first-child {
+    height: 235px !important;
+    min-height: 235px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
+    padding: 24px 30px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+    .dream-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+    inset-inline: 0 !important;
+    top: 100% !important;
+    bottom: auto !important;
+    margin-top: 16px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-toki-card {
+    min-height: 106px !important;
+    padding: 12px 10px !important;
+    border-radius: 15px !important;
+  }
+
+  html.codex-dream-skin.dream-skin-toki .dream-toki-fallback-cards {
+    top: 269px !important;
   }
 }
 

@@ -53,6 +53,12 @@ if (-not (Test-Path -LiteralPath $tokiThemeInstaller -PathType Leaf)) {
 }
 & $tokiThemeInstaller -StateRoot $StateRoot
 
+$tokiPetInstaller = Join-Path $engine.Scripts 'install-toki-pet.ps1'
+if (-not (Test-Path -LiteralPath $tokiPetInstaller -PathType Leaf)) {
+  throw "The managed Toki pet installer is missing: $tokiPetInstaller"
+}
+$null = & $tokiPetInstaller
+
 if (-not $NoShortcuts) {
   $operationLock = Enter-DreamSkinOperationLock
   try {
@@ -109,7 +115,8 @@ if (-not $NoShortcuts) {
 # or disturb an already-running portable Toki build; the managed shortcut starts
 # only the registered Microsoft Store Codex package when the user chooses it.
 if ($NoShortcuts) {
-  Write-Host "Toki Dream Skin installed at $($engine.Root) without creating shortcuts."
+  Write-Host "Toki Dream Skin and Toki Bunny pet installed at $($engine.Root) without creating shortcuts."
 } else {
-  Write-Host 'Toki Dream Skin installed. Use the Toki Codex desktop shortcut to launch the official Store Codex with the external engine.'
+  Write-Host 'Toki Dream Skin and Toki Bunny pet installed. Use the Toki Codex desktop shortcut to launch the official Store Codex with the external engine.'
+  Write-Host 'Open Codex Settings > Pets, choose Refresh, then select Toki Bunny once on this computer.'
 }

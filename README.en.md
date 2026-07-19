@@ -88,17 +88,19 @@ cd macos
   --id preset-arina-hashimoto
 ```
 
-Windows has a persistent local theme store and system-tray controls, and seeds
-the same Arina Hashimoto preset. For the first repo-based setup:
+Windows keeps the same generic local theme store and system-tray controls, but
+the distribution bundles only the Toki bunny preset. For the first repo-based setup:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\windows\scripts\install-dream-skin.ps1
+powershell -ExecutionPolicy Bypass -File .\windows\scripts\install-toki-dream-skin.ps1
 powershell -ExecutionPolicy Bypass -File .\windows\scripts\start-dream-skin.ps1
 ```
 
-After launch, switch directly through **已保存主题 → 桥本有菜**; no cross-folder
-manual import is required. **更换背景图** still imports your own UI-free
-wallpaper, which can then be saved for one-click switching.
+Toki is active immediately after launch. The same installer also deploys the
+bundled Toki Bunny v2 animated pet; select it once through **Settings → Pets →
+Refresh** on a new PC. **更换背景图** still imports your own UI-free wallpaper,
+which can then be saved for one-click switching. The Arina Hashimoto preset
+described above remains a macOS-only bundled preset.
 
 > The downloadable user source is [`docs/images/presets/arina-hashimoto-source.png`](./docs/images/presets/arina-hashimoto-source.png) (`1672 × 941`); the macOS one-click preset uses the normalized derived [`background.jpg`](./macos/presets/preset-arina-hashimoto/background.jpg) (`2560 × 1440`). Do not import either screenshot above: they contain real UI and are previews only. The background is a user-provided AI-generated example, not an official OpenAI/Codex visual or endorsement; confirm likeness and asset rights before redistributing it.
 
@@ -166,7 +168,7 @@ Platform scripts are ready — different plumbing, same goal: theme Codex.
 | Platform | Dir | Entry |
 |------|------|------|
 | Apple Silicon / Intel Mac | [`macos/`](./macos/) | Double-click `Install Codex Dream Skin.command` |
-| Windows | [`windows/`](./windows/) | `scripts/install-dream-skin.ps1` → `start-dream-skin.ps1` |
+| Windows | [`windows/`](./windows/) | `scripts/install-toki-dream-skin.ps1` → `start-dream-skin.ps1` |
 
 More detail:
 

@@ -1,0 +1,43 @@
+{
+  "petId": "toki-bunny",
+  "spriteVersionNumber": 2,
+  "atlas": {
+    "file": "../package/spritesheet.webp",
+    "format": "WEBP",
+    "mode": "RGBA",
+    "width": 1536,
+    "height": 2288,
+    "columns": 8,
+    "rows": 11,
+    "bytes": 2491416,
+    "sha256": "88265fdbb592ed78ee624dbf6d879592b4dfa89f8a5dd2e77d91b5504ad65a7f"
+  },
+  "manifest": {
+    "file": "../package/pet.json",
+    "sha256": "ae2fc7e22551f4128e660499a37b11f3c1cdbd97fcbc8ea8bf2b1d2d31e1e014"
+  },
+  "qaArtifacts": {
+    "contactSheet": {
+      "file": "contact-sheet.png",
+      "sha256": "622645d4c17d77e9c0ddc3e6beaced59e36244576f26af75b504b7a4e88bcc04"
+    },
+    "lookDirections": {
+      "file": "look-directions.png",
+      "sha256": "2fc126c6c62dad2e05cab9f9e0ebb3b89bf2e147aab43c9028619f23cb186d73"
+    }
+  },
+  "checks": {
+    "atlasValidation": "pass_without_errors_or_warnings",
+    "chromaDespill": "pass_alpha_preserved",
+    "standardVisualQa": "pass",
+    "directionSemantics": "16_of_16_pass",
+    "directionBlindValidation": "pass_with_reviewed_intermediate_warning",
+    "continuityReview": "pass_with_reviewed_metric_warnings",
+    "finalVisualQa": "pass",
+    "independentFinalReviewers": 2
+  },
+  "reviewedWarnings": [
+    "Blind reviewers disagreed with the subtle vertical cue at 067.5 and 112.5; labeled normal-size loop review confirmed the intended quadrants.",
+    "Continuity metrics flagged 045 to 067.5 and 337.5 to 000; visual review confirmed stable feet, torso anchor, identity, scale, and attached case."
+  ]
+}

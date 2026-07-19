@@ -104,7 +104,7 @@ try {
   $null = Get-DreamSkinNodeRuntime
   $paths = Initialize-DreamSkinThemeStore -SkillRoot $SkillRoot -StateRoot $StateRoot
   $assetRoot = Join-Path $SkillRoot 'assets'
-  $themePath = Join-Path $assetRoot 'toki-theme.json'
+  $themePath = Join-Path $assetRoot 'theme.json'
   try {
     $theme = (Read-DreamSkinUtf8File -Path $themePath) | ConvertFrom-Json -ErrorAction Stop
   } catch {

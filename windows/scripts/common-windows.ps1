@@ -126,20 +126,24 @@ function Install-DreamSkinRuntimeEngine {
   $fullStateRoot = [System.IO.Path]::GetFullPath($StateRoot)
   $engine = Get-DreamSkinRuntimeEnginePaths -StateRoot $fullStateRoot
   $required = @(
-    'assets\dream-reference.jpg',
     'assets\dream-skin.css',
     'assets\renderer-inject.js',
     'assets\theme.json',
     'assets\toki-reference.png',
     'assets\toki-skin.css',
-    'assets\toki-theme.json',
+    'pets\toki-bunny\package\pet.json',
+    'pets\toki-bunny\package\spritesheet.webp',
     'scripts\common-windows.ps1',
     'scripts\config-utf8.ps1',
     'scripts\image-metadata.mjs',
     'scripts\injector.mjs',
     'scripts\install-dream-skin.ps1',
+    'scripts\install-toki-pet.ps1',
     'scripts\install-toki-dream-skin.ps1',
     'scripts\install-toki-theme.ps1',
+    'scripts\manage-pet-package.ps1',
+    'scripts\pet-package-windows.ps1',
+    'scripts\pet-package.mjs',
     'scripts\restore-dream-skin.ps1',
     'scripts\start-dream-skin.ps1',
     'scripts\theme-windows.ps1',
@@ -151,7 +155,7 @@ function Install-DreamSkinRuntimeEngine {
       throw "Dream Skin runtime source is incomplete: $relative"
     }
   }
-  foreach ($directoryName in @('assets', 'scripts')) {
+  foreach ($directoryName in @('assets', 'pets', 'scripts')) {
     $sourceDirectory = Join-Path $sourceRoot $directoryName
     if ((Test-DreamSkinPathEqual -Left $fullStateRoot -Right $sourceDirectory) -or
       (Test-DreamSkinPathWithin -Path $fullStateRoot -Root $sourceDirectory)) {
@@ -167,7 +171,7 @@ function Install-DreamSkinRuntimeEngine {
   Ensure-DreamSkinManagedDirectory -Path $stagingRoot -Root $fullStateRoot
 
   try {
-    foreach ($directoryName in @('assets', 'scripts')) {
+    foreach ($directoryName in @('assets', 'pets', 'scripts')) {
       Copy-Item -LiteralPath (Join-Path $sourceRoot $directoryName) -Destination $stagingRoot `
         -Recurse -Force -ErrorAction Stop
     }
@@ -180,11 +184,13 @@ function Install-DreamSkinRuntimeEngine {
 
     $sourcePrefix = $sourceRoot.TrimEnd('\') + '\'
     $sourceFiles = @(
-      Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'assets'), (Join-Path $sourceRoot 'scripts') `
+      Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'assets'), (Join-Path $sourceRoot 'pets'), `
+        (Join-Path $sourceRoot 'scripts') `
         -Recurse -File -Force -ErrorAction Stop
     )
     $stagedFiles = @(
-      Get-ChildItem -LiteralPath (Join-Path $stagingRoot 'assets'), (Join-Path $stagingRoot 'scripts') `
+      Get-ChildItem -LiteralPath (Join-Path $stagingRoot 'assets'), (Join-Path $stagingRoot 'pets'), `
+        (Join-Path $stagingRoot 'scripts') `
         -Recurse -File -Force -ErrorAction Stop
     )
     if ($sourceFiles.Count -ne $stagedFiles.Count) {

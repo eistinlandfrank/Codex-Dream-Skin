@@ -8,7 +8,7 @@ English guide: [`reference-background-prompt-guide.en.md`](./reference-backgroun
 
 ## 当前实测精选置顶：桥本有菜
 
-- **实际可切换主题**：`macos/presets/preset-arina-hashimoto/`；Windows 使用 `windows/assets/theme.json` 与 byte-identical 的 `windows/assets/dream-reference.jpg` 组成播种源，两端首装都会播种「桥本有菜」。
+- **实际可切换主题**：`macos/presets/preset-arina-hashimoto/`；该「桥本有菜」预设现在只由 macOS 播种。Windows 发行包只内置 `windows/assets/theme.json` 与 `toki-reference.png` 组成的 Toki 兔女郎预设。
 - **用户提供的纯背景源图**：`docs/images/presets/arina-hashimoto-source.png`（`1672 × 941`）；preset 中的 `2560 × 1440` JPEG 是标准化发行副本，不会凭空增加源图细节。
 - **真实运行效果**：`arina-hashimoto-light.jpg` 与 `arina-hashimoto-dark.jpg` 是浅色/暗色实机截图，只用于预览，不能导入为背景。
 - **与历史示例的关系**：它是当前实际预设，不是 `docs/images/gallery/skin-01.jpg`，也不是 skin-01～08 的概念效果图。skin-01 只提供相近的粉色玫瑰视觉方向和 UI 文案参考。
@@ -21,7 +21,7 @@ README 里的“效果图”不等于可以导入的背景。下面这些文件�
 
 | 类型 | 仓库路径 | 作用 | 能否直接作为完整主题导入 |
 |---|---|---|---|
-| **实际可切换预设（当前置顶）** | `macos/presets/preset-arina-hashimoto/`；Windows 的播种源为 `windows/assets/theme.json` + byte-identical 的 `dream-reference.jpg` | 两端都会播种「桥本有菜」；macOS 用脚本/菜单栏切换，Windows 用系统托盘切换 | **可以** |
+| **实际可切换预设（当前置顶）** | `macos/presets/preset-arina-hashimoto/` | 「桥本有菜」只由 macOS 播种；Windows 的唯一内置预设是独立的 Toki 主题 | **可以** |
 | **纯背景源图** | `docs/images/presets/arina-hashimoto-source.png` | 用户提供的原始纯背景，约 `1672 × 941`；只有图片，没有 `theme.json` | **不能作为完整主题**；可手动换图，但应先检查比例和裁切 |
 | **真实实机效果预览** | `docs/images/presets/arina-hashimoto-light.jpg`、`arina-hashimoto-dark.jpg` | 浅色/暗色 Codex 注入截图，包含真实侧栏、卡片和输入框 | **不可以** |
 | **概念效果图** | `docs/images/gallery/skin-01.jpg` ～ `skin-08.jpg` | 只表达八种视觉方向的带 UI 示例；配套的 `background-generation-prompts.md` 按这些方向拆解 | **不可以** |

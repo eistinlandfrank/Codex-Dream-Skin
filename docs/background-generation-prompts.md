@@ -12,7 +12,7 @@
 
 | 你要做的事 | 应看的文件 | 说明 |
 |---|---|---|
-| 直接切换当前置顶主题 | `macos/presets/preset-arina-hashimoto/theme.json` + `background.jpg`；Windows 对应 `windows/assets/theme.json` + `dream-reference.jpg` | 两端都播种「桥本有菜」；不是 `docs/images/presets/*-light/dark` 截图 |
+| 直接切换当前置顶主题 | macOS：`macos/presets/preset-arina-hashimoto/theme.json` + `background.jpg`；Windows：`windows/assets/theme.json` + `toki-reference.png` | macOS 播种「桥本有菜」，Windows 只内置 Toki；都不是 `docs/images/presets/*-light/dark` 截图 |
 | 重新生成一张纯背景 | 本文件的通用模板或 [`reference-background-prompt-guide.md`](./reference-background-prompt-guide.md) | 输出应是独立的 `2560 × 1440`、16:9 图片，不是截图 |
 | 只看效果或找风格 | `docs/images/gallery/skin-01.jpg` ～ `skin-08.jpg` | 带 UI 的概念效果图，不能改名为 `background.jpg` 后导入 |
 | 查看当前主题在浅/暗色下的实机结果 | `docs/images/presets/arina-hashimoto-light.jpg`、`arina-hashimoto-dark.jpg` | 仅预览，包含真实控件，不能作为背景素材 |

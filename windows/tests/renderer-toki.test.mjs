@@ -68,7 +68,7 @@ function splitDescendantSelector(selector) {
   return parts;
 }
 
-function createFixture() {
+function createFixture({ nativeSuggestions = true } = {}) {
   const observers = [];
   const timeouts = new Map();
   const intervals = new Map();
@@ -436,7 +436,18 @@ function createFixture() {
     suggestions.appendChild(card);
     return card;
   });
-  home.append(homeIcon, suggestions);
+  home.appendChild(homeIcon);
+  if (nativeSuggestions) home.appendChild(suggestions);
+  const composerWrapper = document.createElement("div");
+  composerWrapper.className = "mx-auto w-full max-w-(--thread-content-max-width)";
+  const composer = document.createElement("div");
+  composer.classList.add("composer-surface-chrome");
+  const editor = document.createElement("div");
+  editor.classList.add("ProseMirror");
+  editor.setAttribute("contenteditable", "true");
+  composer.appendChild(editor);
+  composerWrapper.appendChild(composer);
+  home.appendChild(composerWrapper);
   shellMain.appendChild(home);
 
   const context = {
@@ -461,6 +472,12 @@ function createFixture() {
     Blob,
     Uint8Array,
     atob,
+    Event: class {
+      constructor(type, options = {}) {
+        this.type = type;
+        Object.assign(this, options);
+      }
+    },
     setTimeout(callback) {
       const id = nextTimerId;
       nextTimerId += 1;
@@ -527,6 +544,9 @@ function createFixture() {
     homeIcon,
     suggestions,
     cards,
+    composerWrapper,
+    composer,
+    editor,
     settle,
     flushObservers,
     revokedUrls,
@@ -554,6 +574,7 @@ assert.ok(fixture.document.getElementById("dream-toki-settings-row"));
 assert.ok(fixture.document.getElementById("dream-toki-polaroid"));
 assert.equal(fixture.document.getElementById("dream-toki-settings-row").parentElement, fixture.footer);
 assert.equal(fixture.document.getElementById("dream-toki-polaroid").parentElement, fixture.shellMain);
+assert.equal(fixture.composerWrapper.classList.contains("dream-toki-composer-wrap"), true);
 
 fixture.cards.forEach((card, index) => {
   assert.equal(card.disabled, false, `card ${index + 1} should be enabled on first home paint`);
@@ -574,6 +595,7 @@ assert.equal(fixture.root.classList.contains("dream-toki-home"), false);
 assert.equal(fixture.home.classList.contains("dream-home"), false);
 assert.equal(fixture.home.classList.contains("dream-task"), true);
 assert.equal(fixture.document.getElementById("dream-toki-polaroid"), null);
+assert.equal(fixture.composerWrapper.classList.contains("dream-toki-composer-wrap"), false);
 fixture.cards.forEach((card, index) => {
   assert.equal(card.disabled, true, `card ${index + 1} should regain its original disabled state off home`);
   assert.equal(card.classList.contains("dream-toki-card"), false);
@@ -585,6 +607,7 @@ fixture.home.appendChild(fixture.homeIcon);
 fixture.context.window.__CODEX_DREAM_SKIN_STATE__.ensure();
 assert.equal(fixture.root.classList.contains("dream-toki-home"), true);
 assert.ok(fixture.document.getElementById("dream-toki-polaroid"));
+assert.equal(fixture.composerWrapper.classList.contains("dream-toki-composer-wrap"), true);
 fixture.cards.forEach((card) => assert.equal(card.disabled, false));
 
 const state = fixture.context.window.__CODEX_DREAM_SKIN_STATE__;
@@ -599,6 +622,7 @@ assert.equal(fixture.projectRow.classList.contains("dream-toki-project-row"), fa
 assert.equal(fixture.projectLogo.classList.contains("dream-toki-project-logo"), false);
 assert.equal(fixture.document.getElementById("dream-toki-settings-row"), null);
 assert.equal(fixture.document.getElementById("dream-toki-polaroid"), null);
+assert.equal(fixture.composerWrapper.classList.contains("dream-toki-composer-wrap"), false);
 assert.equal(fixture.document.getElementById("codex-dream-skin-style"), null);
 assert.equal(fixture.document.getElementById("codex-dream-skin-chrome"), null);
 assert.equal(fixture.context.window.__CODEX_DREAM_SKIN_STATE__, undefined);
@@ -610,4 +634,21 @@ fixture.cards.forEach((card, index) => {
 });
 assert.deepEqual(fixture.revokedUrls, ["blob:toki-fixture-1"]);
 
-console.log("PASS: Toki renderer decorates home UI, keeps cards clickable, and cleans up reversibly.");
+const fallbackFixture = createFixture({ nativeSuggestions: false });
+vm.runInNewContext(payload, fallbackFixture.context);
+await Promise.resolve();
+fallbackFixture.settle();
+const fallbackGroup = fallbackFixture.document.getElementById("dream-toki-fallback-cards");
+assert.ok(fallbackGroup, "Toki should render immediate cards when native suggestions are absent");
+const fallbackCards = fallbackGroup.querySelectorAll("button");
+assert.equal(fallbackCards.length, 4);
+fallbackCards[0].listeners.get("click")();
+assert.equal(
+  fallbackFixture.editor.textContent,
+  "请探索并理解当前项目，先概述结构、关键模块和运行方式。",
+  "fallback card should seed the native composer without auto-submitting",
+);
+fallbackFixture.context.window.__CODEX_DREAM_SKIN_STATE__.cleanup();
+assert.equal(fallbackFixture.document.getElementById("dream-toki-fallback-cards"), null);
+
+console.log("PASS: Toki renderer keeps native and immediate fallback home cards clickable and cleans up reversibly.");

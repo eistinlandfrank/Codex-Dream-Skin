@@ -612,6 +612,7 @@ async function verifyRemovedSession(session) {
     !document.querySelector('.dream-home-utility') &&
     !document.querySelector('.dream-toki-sidebar') &&
     !document.querySelector('.dream-toki-card') &&
+    !document.getElementById('dream-toki-fallback-cards') &&
     !document.getElementById('dream-toki-settings-row') &&
     !document.getElementById('dream-toki-polaroid') &&
     !document.getElementById('codex-dream-skin-style') &&
@@ -628,7 +629,9 @@ async function verifySession(session) {
       return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
     };
     const home = document.querySelector('.dream-home');
-    const suggestions = home?.querySelector('.group\\\\/home-suggestions') ?? null;
+    const suggestions = home?.querySelector(
+      '.group\\\\/home-suggestions, [data-home-ambient-suggestions], #dream-toki-fallback-cards'
+    ) ?? null;
     const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
     const result = {
       installed: document.documentElement.classList.contains('codex-dream-skin'),
@@ -638,6 +641,7 @@ async function verifySession(session) {
       chromePresent: Boolean(document.getElementById('codex-dream-skin-chrome')),
       chromePointerEvents: getComputedStyle(document.getElementById('codex-dream-skin-chrome') || document.body).pointerEvents,
       homePresent: Boolean(home),
+      tokiHome: document.documentElement.classList.contains('dream-toki-home'),
       suggestionsPresent: Boolean(suggestions),
       hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
       cards,
@@ -653,7 +657,8 @@ async function verifySession(session) {
       result.stylePresent && result.chromePresent &&
       result.chromePointerEvents === 'none' && Boolean(result.composer) && Boolean(result.sidebar) &&
       (!result.homePresent || (Boolean(result.hero) &&
-        (!result.suggestionsPresent || (result.cards.length >= 2 && result.cards.length <= 4))));
+        (!result.tokiHome || (result.suggestionsPresent &&
+          result.cards.length >= 2 && result.cards.length <= 4))));
     return result;
   })()`);
 }

@@ -75,7 +75,7 @@ Windows 启动、失败回滚与恢复重开均从已注册的 `OpenAI.Codex` �
 ### 平台差异
 
 - macOS 的选图脚本会把这些字段写入主题库，可通过 `--appearance`、`--focus-x`、`--focus-y`、`--safe-area`、`--task-mode` 设置。
-- Windows 安装会把运行所需的 `assets/` 与 `scripts/` 原子复制到 `%LOCALAPPDATA%\CodexDreamSkin\engine`，所有快捷方式均指向该受管副本，因此安装后可移动或删除源码目录。安装还会初始化 `active-theme`、`themes` 与 `images`，并把「桥本有菜」同时设为首次默认和可切换的已保存主题。系统托盘支持更换背景、保存当前主题、从「已保存主题」切换、暂停和恢复；图片与 `theme.json` 保存在主题仓库中，不写进 Codex 的 `config.toml`。安装会保留用户已有的 `appearanceTheme`；仅在识别到旧版精确托管的浅色三元组时按备份迁移。
+- Windows 安装会把运行所需的 `assets/`、`pets/` 与 `scripts/` 原子复制到 `%LOCALAPPDATA%\CodexDreamSkin\engine`，所有快捷方式均指向该受管副本，因此安装后可移动或删除源码目录。安装还会初始化 `active-theme`、`themes` 与 `images`，把 Toki 兔女郎设为首次默认和唯一内置的已保存主题，并把通过 v2 校验的 Toki Bunny 桌宠原子安装到 Codex 用户目录。系统托盘支持更换背景、保存当前主题、从「已保存主题」切换、暂停和恢复；用户主题与图片不会在更新引擎时删除，桌宠安装也不会静默改写 `config.toml` 中的选择。
 - Windows 渲染器仍支持在注入前用 `window.__CODEX_DREAM_SKIN_CONFIG__` 提供内存级可选覆盖（形状同上，颜色覆盖使用 `palette.accent`），但普通用户应优先使用持久化主题仓库与托盘。
 
 ## 预设与图片类型
@@ -83,7 +83,7 @@ Windows 启动、失败回滚与恢复重开均从已注册的 `OpenAI.Codex` �
 - `macos/presets/preset-arina-hashimoto/` 是置顶的实测精选主题「桥本有菜 / Arina Hashimoto」。macOS 安装后用 `switch-theme-macos.sh --id preset-arina-hashimoto` 切换。
 - 该 preset pack 中只有 `background.jpg`（`2560 × 1440`、16:9、纯背景）和 `theme.json` 会被播种；它由用户提供的 `1672 × 941` 源 PNG 标准化导出，不代表增加了源图细节。Byte-identical 源图归档在 `docs/images/presets/arina-hashimoto-source.png`，不会随 preset 播种；`arina-hashimoto-light.jpg` 与 `arina-hashimoto-dark.jpg` 是 `2308 × 1572` Retina 浅/暗真实首页截图，未发送输入仅在截图时用临时本地样式遮蔽，只作效果预览，绝不能当背景导入。
 - `macos/presets/preset-gothic-void-crusade/` 是社区作者贡献的原创哥特科幻主题；macOS 没有活动主题时默认启用它。升级只清理固定的旧内置预设 ID，不删除 `custom-*` 或当前活动主题副本。
-- Windows 自带与 macOS byte-identical 的 `windows/assets/dream-reference.jpg` 纯背景，并在首次初始化时播种「桥本有菜」；可直接从「已保存主题 → 桥本有菜」切换。README 实机截图仍只作预览，绝不能作为背景导入。
+- Windows 只内置 `windows/assets/theme.json` 与 `windows/assets/toki-reference.png` 组成的 Toki 兔女郎预设；旧的 Windows「桥本有菜」内置目录会按固定 ID 退休，用户自建主题和当前活动主题副本不受影响。
 - Windows 导入和 macOS 快速加载入口会拒绝空文件或超过 16 MB 的输入；macOS 主定制入口可接收最高 50 MB 的源图，但转换后的主题文件必须不超过 16 MB。两端 payload 构建还会拒绝任一边超过 16384px 或总像素超过 50MP 的声明尺寸；Windows 在复制导入图前复用 Node 元数据解析器执行同一限制。Windows 注入器用图片与主题内容的 SHA-256 修订值识别热更新，并在构建首帧 payload 前同步读取图片比例。
 - 自定义生图优先使用 `2560 × 1440`（16:9）：左侧约 50%～58% 保持低信息、低对比，主体放在右侧约 58%～88%。输出必须是连续铺满画布的纯背景，禁止窗口、侧栏、卡片、输入框、文字、Logo 和水印。
 - 可直接复制的无人物、右侧成年人物与参考图编辑模板见 `docs/reference-background-prompt-guide.md`；公共默认提示词不指定真人或名人。

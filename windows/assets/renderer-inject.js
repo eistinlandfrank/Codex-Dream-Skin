@@ -32,6 +32,8 @@
   ];
   const HOME_UTILITY_CLASS = "dream-home-utility";
   const TOKI_CARD_CLASS = "dream-toki-card";
+  const TOKI_COMPOSER_WRAP_CLASS = "dream-toki-composer-wrap";
+  const TOKI_FALLBACK_CARDS_ID = "dream-toki-fallback-cards";
   const TOKI_SETTINGS_ROW_ID = "dream-toki-settings-row";
   const TOKI_POLAROID_ID = "dream-toki-polaroid";
   const TOKI_ORIGINAL_TEXT = "data-dream-toki-original-text";
@@ -43,6 +45,7 @@
     ".composer-surface-chrome",
     ".group\\/home-suggestions",
     "[data-home-ambient-suggestions]",
+    `#${TOKI_FALLBACK_CARDS_ID}`,
     "[data-app-action-sidebar-project-row]",
     'button[aria-haspopup="menu"]',
     '[class*="bottom-0"]',
@@ -413,6 +416,7 @@
     const candidates = home ? Array.from(home.querySelectorAll(selectors)) : [];
     const liveCards = Array.from(new Set(candidates)).slice(0, 4);
     document.querySelectorAll(`.${TOKI_CARD_CLASS}`).forEach((card) => {
+      if (card.closest?.(`#${TOKI_FALLBACK_CARDS_ID}`)) return;
       if (liveCards.includes(card)) return;
       card.classList.remove(TOKI_CARD_CLASS);
       for (let index = 1; index <= 4; index += 1) {
@@ -433,6 +437,112 @@
         card.disabled = false;
       }
     });
+    return liveCards.length;
+  };
+
+  const seedTokiPrompt = (home, prompt) => {
+    const editor = home?.querySelector('.ProseMirror[contenteditable="true"]');
+    if (!(editor instanceof HTMLElement)) return;
+    editor.focus?.({ preventScroll: true });
+    try {
+      const selection = window.getSelection?.();
+      const range = document.createRange?.();
+      if (selection && range) {
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      if (document.execCommand?.("insertText", false, prompt)) return;
+    } catch {}
+    editor.textContent = prompt;
+    const event = typeof InputEvent === "function"
+      ? new InputEvent("input", { bubbles: true, inputType: "insertText", data: prompt })
+      : new Event("input", { bubbles: true });
+    editor.dispatchEvent?.(event);
+  };
+
+  const ensureTokiFallbackCards = (home, nativeCardCount) => {
+    const existing = document.getElementById(TOKI_FALLBACK_CARDS_ID);
+    if (!home || nativeCardCount > 0) {
+      existing?.remove();
+      return;
+    }
+    if (existing instanceof HTMLElement) {
+      if (existing.parentElement !== home) home.appendChild(existing);
+      return;
+    }
+
+    const templates = [
+      ["探索并理解代码", "请探索并理解当前项目，先概述结构、关键模块和运行方式。"],
+      ["构建新功能、应用或工具", "请根据我的目标构建一个新功能、应用或工具。"],
+      ["审查代码并提出修改建议", "请审查当前代码并提出具体、可执行的修改建议。"],
+      ["修复问题和失败", "请定位并修复当前项目中的问题或失败，并验证结果。"],
+    ];
+    const sidebarButtons = Array.from(
+      document.querySelectorAll("aside.app-shell-left-panel button")
+    );
+    const allIcons = sidebarButtons.map((button) => button.querySelector("svg"))
+      .filter((icon) => typeof icon?.cloneNode === "function");
+    const iconPatterns = [
+      /新建任务|new task/i,
+      /插件|plugin|技能|skill/i,
+      /拉取请求|pull request|review|审查/i,
+      /聊天|chat|help|修复/i,
+    ];
+    const iconSources = iconPatterns.map((pattern, index) => {
+      const matched = sidebarButtons.find((button) => pattern.test(
+        `${button.textContent || ""} ${button.getAttribute("aria-label") || ""}`
+      ))?.querySelector("svg");
+      return typeof matched?.cloneNode === "function"
+        ? matched
+        : allIcons[(index + 2) % Math.max(allIcons.length, 1)];
+    });
+    const group = document.createElement("div");
+    group.id = TOKI_FALLBACK_CARDS_ID;
+    group.className = "dream-toki-fallback-cards";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Toki 快速开始");
+    templates.forEach(([labelText, prompt], index) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `${TOKI_CARD_CLASS} ${TOKI_CARD_CLASS}-${index + 1} dream-toki-fallback-card`;
+      card.dataset.dreamTokiCardIndex = String(index + 1);
+      card.setAttribute("aria-label", labelText);
+      card.addEventListener("click", () => seedTokiPrompt(home, prompt));
+      const iconRow = document.createElement("span");
+      const iconFrame = document.createElement("span");
+      iconFrame.setAttribute("aria-hidden", "true");
+      const icon = iconSources[index % Math.max(iconSources.length, 1)]?.cloneNode(true);
+      if (icon) iconFrame.appendChild(icon);
+      iconRow.appendChild(iconFrame);
+      const label = document.createElement("span");
+      label.textContent = labelText;
+      card.append(iconRow, label);
+      group.appendChild(card);
+    });
+    home.appendChild(group);
+  };
+
+  const decorateTokiComposer = (home) => {
+    let liveWrapper = null;
+    const composer = home?.querySelector(".composer-surface-chrome");
+    if (composer instanceof HTMLElement) {
+      let wrapper = composer.parentElement;
+      while (wrapper && wrapper !== home) {
+        const className = typeof wrapper.className === "string" ? wrapper.className : "";
+        if (className.includes("max-w-(--thread-content-max-width)")) {
+          liveWrapper = wrapper;
+          break;
+        }
+        wrapper = wrapper.parentElement;
+      }
+    }
+
+    document.querySelectorAll(`.${TOKI_COMPOSER_WRAP_CLASS}`).forEach((node) => {
+      if (node !== liveWrapper) node.classList.remove(TOKI_COMPOSER_WRAP_CLASS);
+    });
+    liveWrapper?.classList.add(TOKI_COMPOSER_WRAP_CLASS);
   };
 
   const ensureTokiPolaroid = (shellMain, home) => {
@@ -469,6 +579,7 @@
   const clearTokiDom = () => {
     document.getElementById(TOKI_SETTINGS_ROW_ID)?.remove();
     document.getElementById(TOKI_POLAROID_ID)?.remove();
+    document.getElementById(TOKI_FALLBACK_CARDS_ID)?.remove();
     document.querySelectorAll(`[${TOKI_ORIGINAL_TEXT}]`).forEach((node) => {
       node.textContent = node.getAttribute(TOKI_ORIGINAL_TEXT) || "";
       node.removeAttribute(TOKI_ORIGINAL_TEXT);
@@ -495,6 +606,8 @@
       }
       delete card.dataset.dreamTokiForcedEnabled;
     });
+    document.querySelectorAll(`.${TOKI_COMPOSER_WRAP_CLASS}`).forEach((node) =>
+      node.classList.remove(TOKI_COMPOSER_WRAP_CLASS));
   };
 
   const ensureTokiDom = (root, shellMain, sidebar, home) => {
@@ -506,7 +619,9 @@
       return;
     }
     decorateTokiSidebar(sidebar);
-    decorateTokiCards(home);
+    const nativeCardCount = decorateTokiCards(home);
+    ensureTokiFallbackCards(home, nativeCardCount);
+    decorateTokiComposer(home);
     ensureTokiPolaroid(shellMain, home);
   };
 
