@@ -30,6 +30,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-d
 
 桌宠包会安全安装到 `%USERPROFILE%\.codex\pets\toki-bunny`（设置 `CODEX_HOME` 时使用对应目录），但安装器不会静默改写当前宠物选择。首次部署后在 **Codex 设置 → Pets → Refresh** 中选择 **Toki Bunny**；以后重装会原子更新同一个桌宠包。
 
+运行任务的数字提示会跟随侧栏中的真实任务状态。Codex 原生桌宠通知超时后，Dream Skin 会显示同等计数的备用数字框；原生通知重新出现或任务结束时，备用框会自动隐藏，不会叠出两个数字。
+
 安装命令中的 `Bypass` 只作用于这一次由用户明确发起的安装进程。安装器会先校验运行时副本的 SHA-256，再仅对 `%LOCALAPPDATA%\CodexDreamSkin\engine` 中受管的 PowerShell 副本清除下载区标记。日常快捷方式使用 `RemoteSigned`，不会绕过系统或企业组策略。
 
 如需使用自定义端口，可以在安装时传入 `-Port`。端口范围必须是 `1024` 到 `65535`。

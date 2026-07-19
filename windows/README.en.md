@@ -30,6 +30,8 @@ The installer validates the official Codex Store package and Node.js, initialize
 
 The pet package is installed safely under `%USERPROFILE%\.codex\pets\toki-bunny` (or the matching `CODEX_HOME`), but the installer does not silently change the selected pet. After the first deployment, open **Codex Settings → Pets → Refresh** and select **Toki Bunny**. Later installs atomically update the same package.
 
+The running-task count follows the real task state in the sidebar. When Codex's native pet notification expires, Dream Skin supplies an equivalent fallback badge; it automatically hides when the native notification returns or the tasks finish, so the counts never stack.
+
 `Bypass` in the install command applies only to that user-initiated installer process. The installer verifies the runtime copy with SHA-256, then clears download-zone markers only from managed PowerShell copies under `%LOCALAPPDATA%\CodexDreamSkin\engine`. Daily shortcuts use `RemoteSigned` and do not override system or enterprise Group Policy.
 
 Pass `-Port` during installation to use a fixed custom port. Valid ports range from `1024` through `65535`.

@@ -876,7 +876,8 @@ try {
     'dream-home-utility', 'artMetadata', 'detectShellAppearance', 'ensureTokiDom',
     'dream-toki-settings-row', 'dream-toki-polaroid', 'dream-toki-card',
     'dream-toki-fallback-cards', 'seedTokiPrompt',
-    'document.visibilityState === "visible"', '}, 30000)'
+    'document.visibilityState === "visible"', '}, 30000)',
+    'codex-dream-skin-activity-v1', 'running-tasks', 'setInterval(publishActivity, 2000)'
   )) {
     if (-not $rendererSource.Contains($requiredRendererBehavior)) {
       throw "Renderer adaptive behavior is missing: $requiredRendererBehavior"
@@ -885,7 +886,8 @@ try {
   $injectorSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\injector.mjs')
   foreach ($requiredInjectorBehavior in @(
     'MAX_ART_BYTES', 'createHash', 'readImageMetadata', '50MP safety limit', 'STRONG_THEME_AUDIT_MS',
-    'Page.addScriptToEvaluateOnNewDocument', 'Page.removeScriptToEvaluateOnNewDocument', 'earlyPayloadFor'
+    'Page.addScriptToEvaluateOnNewDocument', 'Page.removeScriptToEvaluateOnNewDocument', 'earlyPayloadFor',
+    'avatar-overlay-inject.js', 'isAvatarOverlayTarget', '__CODEX_DREAM_SKIN_ACTIVITY_OVERLAY__'
   )) {
     if (-not $injectorSource.Contains($requiredInjectorBehavior)) {
       throw "Injector theme safety is missing: $requiredInjectorBehavior"
@@ -939,6 +941,9 @@ try {
   $rendererTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $PSScriptRoot 'renderer-inject.test.mjs'))
   if ($rendererTest.ExitCode -ne 0) { throw 'Renderer auxiliary-window regression test failed.' }
+  $avatarOverlayTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
+    (Join-Path $PSScriptRoot 'avatar-overlay-inject.test.mjs'))
+  if ($avatarOverlayTest.ExitCode -ne 0) { throw 'Avatar overlay activity fallback regression test failed.' }
   $tokiRendererTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $PSScriptRoot 'renderer-toki.test.mjs'))
   if ($tokiRendererTest.ExitCode -ne 0) { throw 'Toki renderer and cleanup regression test failed.' }

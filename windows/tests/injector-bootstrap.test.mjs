@@ -3,11 +3,17 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
-import { earlyPayloadFor } from "../scripts/injector.mjs";
+import { earlyPayloadFor, isAvatarOverlayTarget } from "../scripts/injector.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const injectorPath = path.resolve(here, "../scripts/injector.mjs");
 const source = await fs.readFile(injectorPath, "utf8");
+
+assert.equal(isAvatarOverlayTarget({
+  url: "app://-/index.html?initialRoute=%2Favatar-overlay",
+}), true);
+assert.equal(isAvatarOverlayTarget({ url: "app://-/index.html" }), false);
+assert.equal(isAvatarOverlayTarget({ url: "https://example.com/?initialRoute=%2Favatar-overlay" }), false);
 
 function createFixture() {
   const observers = [];

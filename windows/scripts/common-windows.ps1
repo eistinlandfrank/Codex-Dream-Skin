@@ -127,6 +127,7 @@ function Install-DreamSkinRuntimeEngine {
   $engine = Get-DreamSkinRuntimeEnginePaths -StateRoot $fullStateRoot
   $required = @(
     'assets\dream-skin.css',
+    'assets\avatar-overlay-inject.js',
     'assets\renderer-inject.js',
     'assets\theme.json',
     'assets\toki-reference.png',

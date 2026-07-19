@@ -271,6 +271,16 @@ async function listAppTargets(port, expectedBrowserId = null) {
   return targets.filter((item) => isValidCdpPageTarget(item, port));
 }
 
+export function isAvatarOverlayTarget(target) {
+  try {
+    const url = new URL(target?.url || "");
+    return url.protocol === "app:" && url.pathname === "/index.html" &&
+      url.searchParams.get("initialRoute") === "/avatar-overlay";
+  } catch {
+    return false;
+  }
+}
+
 async function connectBrowserIdentityAnchor(port, expectedBrowserId) {
   const version = await fetchCdpJson(port, "/json/version");
   const actualBrowserId = browserIdFromVersion(version, port);
@@ -420,6 +430,10 @@ async function loadPayload(themeDir = path.join(root, "assets"), candidateTheme 
   return { ...themeState, payload };
 }
 
+async function loadAvatarOverlayPayload() {
+  return fs.readFile(path.join(root, "assets", "avatar-overlay-inject.js"), "utf8");
+}
+
 async function fileExists(filePath) {
   if (!filePath) return false;
   try {
@@ -551,6 +565,22 @@ async function registerEarlyPayload(session, payload, revision) {
 async function removeEarlyPayload(session, identifier) {
   if (!identifier || session.closed) return;
   await session.send("Page.removeScriptToEvaluateOnNewDocument", { identifier }).catch(() => {});
+}
+
+async function registerAvatarOverlayPayload(session, payload) {
+  const result = await session.send("Page.addScriptToEvaluateOnNewDocument", { source: payload });
+  return result.identifier ?? null;
+}
+
+async function removeAvatarOverlayFromSession(session) {
+  return session.evaluate(`(() => {
+    const state = window.__CODEX_DREAM_SKIN_ACTIVITY_OVERLAY__;
+    if (state?.cleanup) return state.cleanup();
+    document.getElementById('codex-dream-skin-activity-fallback-badge')?.remove();
+    document.getElementById('codex-dream-skin-activity-fallback-style')?.remove();
+    delete window.__CODEX_DREAM_SKIN_ACTIVITY_OVERLAY__;
+    return true;
+  })()`);
 }
 
 async function removeFromSession(session) {
@@ -738,6 +768,10 @@ async function runWatch(options) {
   const identityAnchor = await connectBrowserIdentityAnchor(options.port, options.browserId);
   const sessions = new Map();
   const earlyScripts = new Map();
+  const overlaySessions = new Map();
+  const overlayEarlyScripts = new Map();
+  const overlayFallbackTargets = new Set();
+  const overlayFallbackListeners = new Set();
   const fallbackTargets = new Map();
   const fallbackListeners = new Set();
   const targetFailures = new Map();
@@ -747,6 +781,7 @@ async function runWatch(options) {
   let lastThemeErrorLogAt = 0;
   let lastStrongThemeAuditAt = 0;
   let loadedPayload = null;
+  let avatarOverlayPayload = null;
   let paused = false;
   const stop = () => { stopping = true; };
   const rejectTarget = (target, baseDelayMs, error = null) => {
@@ -777,10 +812,30 @@ async function runWatch(options) {
       }, 250);
     });
   };
+  const attachOverlayLoadFallback = (id, target, session) => {
+    if (overlayFallbackListeners.has(id)) return;
+    overlayFallbackListeners.add(id);
+    let lastReinjectErrorLogAt = 0;
+    session.on("Page.loadEventFired", () => {
+      if (!overlayFallbackTargets.has(id)) return;
+      setTimeout(() => {
+        const operation = paused
+          ? removeAvatarOverlayFromSession(session)
+          : session.evaluate(avatarOverlayPayload);
+        operation.catch((error) => {
+          if (Date.now() - lastReinjectErrorLogAt >= 30000) {
+            console.error(`[dream-skin] avatar overlay reinject failed for ${target.id}: ${error.message}`);
+            lastReinjectErrorLogAt = Date.now();
+          }
+        });
+      }, 250);
+    });
+  };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 
   try {
+    avatarOverlayPayload = await loadAvatarOverlayPayload();
     loadedPayload = await loadPayload(options.themeDir);
     lastStrongThemeAuditAt = Date.now();
     paused = await fileExists(options.pauseFile);
@@ -879,6 +934,42 @@ async function runWatch(options) {
             sessions.delete(id);
           }
         }
+        if (pauseChanged) {
+          for (const [id, session] of overlaySessions) {
+            try {
+              const previousEarlyScript = overlayEarlyScripts.get(id);
+              if (paused) {
+                await removeAvatarOverlayFromSession(session);
+                await removeEarlyPayload(session, previousEarlyScript);
+                overlayEarlyScripts.delete(id);
+                overlayFallbackTargets.delete(id);
+              } else {
+                let nextEarlyScript = null;
+                try {
+                  nextEarlyScript = await registerAvatarOverlayPayload(session, avatarOverlayPayload);
+                  if (!nextEarlyScript) throw new Error("CDP did not return an early-script identifier");
+                  overlayFallbackTargets.delete(id);
+                } catch (error) {
+                  overlayFallbackTargets.add(id);
+                  console.error(`[dream-skin] avatar overlay early refresh unavailable for ${id}: ${error.message}`);
+                  attachOverlayLoadFallback(id, { id }, session);
+                }
+                if (nextEarlyScript) overlayEarlyScripts.set(id, nextEarlyScript);
+                else overlayEarlyScripts.delete(id);
+                await removeEarlyPayload(session, previousEarlyScript);
+                await session.evaluate(avatarOverlayPayload);
+              }
+            } catch (error) {
+              console.error(`[dream-skin] avatar overlay update failed for ${id}: ${error.message}`);
+              await removeEarlyPayload(session, overlayEarlyScripts.get(id));
+              overlayEarlyScripts.delete(id);
+              overlayFallbackTargets.delete(id);
+              overlayFallbackListeners.delete(id);
+              session.close();
+              overlaySessions.delete(id);
+            }
+          }
+        }
         console.log(paused ? "[dream-skin] paused" : `[dream-skin] active theme ${loadedPayload.theme.id}`);
       }
 
@@ -897,11 +988,58 @@ async function runWatch(options) {
           targetFailures.delete(id);
         }
       }
+      for (const [id, session] of overlaySessions) {
+        if (!activeIds.has(id) || session.closed) {
+          await removeEarlyPayload(session, overlayEarlyScripts.get(id));
+          overlayEarlyScripts.delete(id);
+          overlayFallbackTargets.delete(id);
+          overlayFallbackListeners.delete(id);
+          session.close();
+          overlaySessions.delete(id);
+          targetFailures.delete(id);
+        }
+      }
 
       for (const target of targets) {
         if (identityAnchor.closed) break;
-        if (sessions.has(target.id)) continue;
+        if (sessions.has(target.id) || overlaySessions.has(target.id)) continue;
         if ((targetFailures.get(target.id)?.until ?? 0) > Date.now()) continue;
+        if (isAvatarOverlayTarget(target)) {
+          let overlaySession;
+          let overlayEarlyScriptId = null;
+          try {
+            overlaySession = await connectTarget(target, options.port);
+            if (identityAnchor.closed) throw new CdpIdentityMismatchError("Original CDP browser identity closed");
+            if (!paused) {
+              try {
+                overlayEarlyScriptId = await registerAvatarOverlayPayload(overlaySession, avatarOverlayPayload);
+                if (!overlayEarlyScriptId) throw new Error("CDP did not return an early-script identifier");
+                overlayFallbackTargets.delete(target.id);
+              } catch (error) {
+                await removeEarlyPayload(overlaySession, overlayEarlyScriptId);
+                overlayEarlyScriptId = null;
+                overlayFallbackTargets.add(target.id);
+                attachOverlayLoadFallback(target.id, target, overlaySession);
+                console.error(`[dream-skin] avatar overlay early injection unavailable for ${target.id}: ${error.message}`);
+              }
+              await overlaySession.evaluate(avatarOverlayPayload);
+            } else {
+              await removeAvatarOverlayFromSession(overlaySession);
+            }
+            overlaySessions.set(target.id, overlaySession);
+            if (overlayEarlyScriptId) overlayEarlyScripts.set(target.id, overlayEarlyScriptId);
+            targetFailures.delete(target.id);
+            console.log(`[dream-skin] injected avatar overlay ${target.id}`);
+          } catch (error) {
+            await removeEarlyPayload(overlaySession, overlayEarlyScriptId);
+            overlayFallbackTargets.delete(target.id);
+            overlayFallbackListeners.delete(target.id);
+            overlaySession?.close();
+            if (identityAnchor.closed || error instanceof CdpIdentityMismatchError) break;
+            rejectTarget(target, 2500, error);
+          }
+          continue;
+        }
         let session;
         let earlyScriptId = null;
         try {
@@ -963,7 +1101,14 @@ async function runWatch(options) {
       await removeEarlyPayload(session, earlyScripts.get(id));
       session.close();
     }
+    for (const [id, session] of overlaySessions) {
+      await removeEarlyPayload(session, overlayEarlyScripts.get(id));
+      session.close();
+    }
     earlyScripts.clear();
+    overlayEarlyScripts.clear();
+    overlayFallbackTargets.clear();
+    overlayFallbackListeners.clear();
     fallbackTargets.clear();
     fallbackListeners.clear();
   }

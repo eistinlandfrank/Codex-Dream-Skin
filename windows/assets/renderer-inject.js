@@ -1,5 +1,6 @@
 ((cssText, artDataUrl, rawConfig) => {
   const STATE_KEY = "__CODEX_DREAM_SKIN_STATE__";
+  const ACTIVITY_CHANNEL = "codex-dream-skin-activity-v1";
   const STYLE_ID = "codex-dream-skin-style";
   const CHROME_ID = "codex-dream-skin-chrome";
   const ROOT_CLASSES = [
@@ -53,6 +54,8 @@
   const installToken = {};
   let samplingNativeShell = false;
   let observer = null;
+  let activityChannel = null;
+  let activityTimer = null;
   let lastProfileSignature = "";
   window.__CODEX_DREAM_SKIN_DISABLED__ = false;
 
@@ -132,6 +135,8 @@
   } else {
     if (previous?.observer) previous.observer.disconnect();
     if (previous?.timer) clearInterval(previous.timer);
+    if (previous?.activityTimer) clearInterval(previous.activityTimer);
+    previous?.activityChannel?.close?.();
     if (previous?.scheduler?.timeout) clearTimeout(previous.scheduler.timeout);
     if (previous?.artUrl) URL.revokeObjectURL(previous.artUrl);
   }
@@ -745,6 +750,8 @@
     clearSkinDom();
     state?.observer?.disconnect();
     if (state?.timer) clearInterval(state.timer);
+    if (state?.activityTimer) clearInterval(state.activityTimer);
+    state?.activityChannel?.close?.();
     if (state?.scheduler?.timeout) clearTimeout(state.scheduler.timeout);
     if (state?.artUrl) URL.revokeObjectURL(state.artUrl);
     delete window[STATE_KEY];
@@ -800,10 +807,47 @@
   const timer = setInterval(() => {
     if (document.visibilityState === "visible") ensure();
   }, 30000);
+
+  const collectRunningTasks = () => {
+    const rows = new Set();
+    for (const spinner of document.querySelectorAll("aside.app-shell-left-panel .animate-spin")) {
+      const row = spinner.closest?.('[role="listitem"]');
+      const list = row?.closest?.('[role="list"]');
+      const listLabel = (list?.getAttribute?.("aria-label") || "").trim().toLowerCase();
+      if (row && (listLabel.includes("task") || listLabel.includes("\u4efb\u52a1"))) rows.add(row);
+    }
+    const titles = [...rows].map((row) =>
+      (row.innerText || row.textContent || "")
+        .split(/\r?\n/)
+        .map((part) => part.trim())
+        .find(Boolean),
+    ).filter(Boolean).slice(0, 99);
+    if (!titles.length) {
+      const stopButton = [...document.querySelectorAll('button[aria-label]')].find((button) => {
+        const label = (button.getAttribute?.("aria-label") || "").trim().toLowerCase();
+        return label === "stop" || label === "\u505c\u6b62";
+      });
+      if (stopButton) titles.push(document.title?.trim() || "Current task");
+    }
+    return { type: "running-tasks", count: titles.length, titles, sentAt: Date.now() };
+  };
+  const publishActivity = () => {
+    try {
+      activityChannel?.postMessage(collectRunningTasks());
+    } catch {
+      // The overlay is optional; the skin must remain usable if the channel closes during shutdown.
+    }
+  };
+  if (typeof BroadcastChannel === "function") {
+    activityChannel = new BroadcastChannel(ACTIVITY_CHANNEL);
+    activityTimer = setInterval(publishActivity, 2000);
+  }
   window[STATE_KEY] = {
-    ensure, cleanup, observer, timer, scheduler, artUrl, profile, config, installToken, version: "1.2.0",
+    ensure, cleanup, observer, timer, scheduler, artUrl, profile, config, installToken,
+    activityChannel, activityTimer, collectRunningTasks, publishActivity, version: "1.2.0",
   };
   ensure();
+  publishActivity();
   analyzeArt().then((result) => {
     const state = window[STATE_KEY];
     if (state?.installToken !== installToken || window.__CODEX_DREAM_SKIN_DISABLED__) return;

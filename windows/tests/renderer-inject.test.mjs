@@ -29,6 +29,7 @@ function createFixture({
   computedColorScheme = "",
   osAppearance = "light",
   analysisFixture = null,
+  runningTaskTitles = [],
 }) {
   const nodes = new Map();
   const rootClasses = new Set(staleSkin ? ["codex-dream-skin"] : []);
@@ -38,6 +39,8 @@ function createFixture({
   let objectUrlCount = 0;
   let hasShell = shellPresent;
   let root;
+  const activityMessages = [];
+  const activityChannels = [];
 
   const queueRootClassMutation = () => {
     for (const observer of observers) {
@@ -107,6 +110,14 @@ function createFixture({
   };
   const staleHome = { classList: makeClassList(new Set(["dream-home"])) };
   const staleShell = { classList: makeClassList(new Set(["dream-home-shell"])) };
+  const runningSpinners = runningTaskTitles.map((title) => {
+    const list = { getAttribute(name) { return name === "aria-label" ? "Tasks" : null; } };
+    const row = {
+      innerText: title,
+      closest(selector) { return selector === '[role="list"]' ? list : null; },
+    };
+    return { closest(selector) { return selector === '[role="listitem"]' ? row : null; } };
+  });
 
   const createElement = (tagName) => {
     if (tagName === "canvas" && analysisFixture) {
@@ -143,6 +154,7 @@ function createFixture({
   }
 
   const document = {
+    title: "Fixture task",
     documentElement: root,
     head: root,
     body,
@@ -157,6 +169,8 @@ function createFixture({
       return null;
     },
     querySelectorAll(selector) {
+      if (selector === "aside.app-shell-left-panel .animate-spin") return runningSpinners;
+      if (selector === 'button[aria-label]') return [];
       if (selector === '[role="main"]') return hasShell ? [routeMain] : [];
       if (selector === ".dream-task") return routeClasses.has("dream-task") ? [routeMain] : [];
       if (selector === ".dream-home-utility") {
@@ -207,6 +221,15 @@ function createFixture({
     setTimeout: () => 2,
     clearTimeout: () => {},
     getComputedStyle() { return { colorScheme: computedColorScheme }; },
+    BroadcastChannel: class {
+      constructor(name) {
+        this.name = name;
+        this.closed = false;
+        activityChannels.push(this);
+      }
+      postMessage(message) { activityMessages.push(message); }
+      close() { this.closed = true; }
+    },
   };
   if (analysisFixture) {
     context.Image = class {
@@ -225,9 +248,26 @@ function createFixture({
     revokedUrls,
     routeClasses,
     utilityClasses,
+    activityMessages,
+    activityChannels,
     setShellPresent(value) { hasShell = value; },
   };
 }
+
+const activity = createFixture({
+  shellPresent: true,
+  runningTaskTitles: ["First running task", "Second running task"],
+});
+vm.runInNewContext(payload, activity.context);
+const activityState = activity.context.window.__CODEX_DREAM_SKIN_STATE__;
+assert.equal(activity.activityChannels[0].name, "codex-dream-skin-activity-v1");
+assert.equal(activity.activityMessages.at(-1).type, "running-tasks");
+assert.equal(activity.activityMessages.at(-1).count, 2);
+assert.equal(activity.activityMessages.at(-1).titles.join("|"), "First running task|Second running task");
+activityState.publishActivity();
+assert.equal(activity.activityMessages.length, 2);
+assert.equal(activityState.cleanup(), true);
+assert.equal(activity.activityChannels[0].closed, true);
 
 const main = createFixture({ shellPresent: true });
 const mainResult = vm.runInNewContext(payload, main.context);
