@@ -35,7 +35,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dream-
 在另一台电脑上部署时，先安装官方 Microsoft Store Codex 与 [Node.js 22 或更高版本](https://nodejs.org/)，关闭 Codex 和旧的 Dream Skin 托盘，然后运行：
 
 ```powershell
-git clone --branch toki/engine-1.2.0 --single-branch https://github.com/eistinlandfrank/Codex-Dream-Skin.git
+git clone https://github.com/eistinlandfrank/Codex-Dream-Skin.git
 cd .\Codex-Dream-Skin\windows
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-dream-skin.ps1
 ```

@@ -35,7 +35,7 @@ This branch includes the complete Toki theme for Dream Skin 1.2.0: continuous ho
 To deploy it on another PC, install the official Microsoft Store Codex app and [Node.js 22 or newer](https://nodejs.org/), close Codex and any older Dream Skin tray, then run:
 
 ```powershell
-git clone --branch toki/engine-1.2.0 --single-branch https://github.com/eistinlandfrank/Codex-Dream-Skin.git
+git clone https://github.com/eistinlandfrank/Codex-Dream-Skin.git
 cd .\Codex-Dream-Skin\windows
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-dream-skin.ps1
 ```
