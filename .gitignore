@@ -8,6 +8,8 @@ README.preview.html
 docs/readme-preview.html
 release/
 runtime/
+/windows/scripts/node.exe
+/design-qa.md
 
 # local agent context
 AGENTS.md

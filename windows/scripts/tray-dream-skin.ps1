@@ -15,6 +15,7 @@ $paths = Initialize-DreamSkinThemeStore -SkillRoot $SkillRoot -StateRoot $StateR
 $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
 $startScript = Join-Path $PSScriptRoot 'start-dream-skin.ps1'
 $restoreScript = Join-Path $PSScriptRoot 'restore-dream-skin.ps1'
+$skipBaseThemeMarker = Join-Path $StateRoot 'skip-base-theme'
 
 $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $mutex = [System.Threading.Mutex]::new($false, "Local\CodexDreamSkin.$sid.Tray")
@@ -138,9 +139,12 @@ try {
     }
     [void]$menu.Items.Add([System.Windows.Forms.ToolStripSeparator]::new())
     $null = Add-DreamSkinTrayItem -Items $menu.Items -Text '完全恢复 Codex' -Action {
-      Start-DreamSkinPowerShell -Script $restoreScript -Arguments @(
-        '-Port', "$Port", '-RestoreBaseTheme', '-PromptRestart'
-      )
+      $restoreArguments = @('-Port', "$Port")
+      if (-not (Test-Path -LiteralPath $skipBaseThemeMarker -PathType Leaf)) {
+        $restoreArguments += '-RestoreBaseTheme'
+      }
+      $restoreArguments += '-PromptRestart'
+      Start-DreamSkinPowerShell -Script $restoreScript -Arguments $restoreArguments
       $notify.Visible = $false
       [System.Windows.Forms.Application]::Exit()
     }

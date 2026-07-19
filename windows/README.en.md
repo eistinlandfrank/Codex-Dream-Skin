@@ -28,6 +28,20 @@ The installer validates the official Codex Store package and Node.js, saves a re
 - `Codex Dream Skin - Tray`: open the system tray theme controls.
 - `Codex Dream Skin - Restore`: restore the stock appearance and close the saved CDP session.
 
+### Install the Toki bunny theme
+
+This branch includes the complete Toki theme for Dream Skin 1.2.0: continuous home/task backgrounds, the original `Toki Codex` wordmark, native project-folder icons, theme controls, and safe restore behavior. It is loaded by the external engine and does not modify `app.asar`.
+
+To deploy it on another PC, install the official Microsoft Store Codex app and [Node.js 22 or newer](https://nodejs.org/), close Codex and any older Dream Skin tray, then run:
+
+```powershell
+git clone --branch toki/engine-1.2.0 --single-branch https://github.com/eistinlandfrank/Codex-Dream-Skin.git
+cd .\Codex-Dream-Skin\windows
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-dream-skin.ps1
+```
+
+Launch `Toki Codex（飞鸟马时）` from the desktop after installation. Theme-control and restore shortcuts are installed with it, and the source checkout can then be moved or removed.
+
 `Bypass` in the install command applies only to that user-initiated installer process. The installer verifies the runtime copy with SHA-256, then clears download-zone markers only from managed PowerShell copies under `%LOCALAPPDATA%\CodexDreamSkin\engine`. Daily shortcuts use `RemoteSigned` and do not override system or enterprise Group Policy.
 
 Pass `-Port` during installation to use a fixed custom port. Valid ports range from `1024` through `65535`.

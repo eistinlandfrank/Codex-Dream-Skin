@@ -28,6 +28,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dream-
 - `Codex Dream Skin - Tray`：打开系统托盘主题控制。
 - `Codex Dream Skin - Restore`：恢复官方外观并关闭已保存的 CDP 会话。
 
+### 安装 Toki 兔女郎主题
+
+这一分支包含适配 Dream Skin 1.2.0 的完整 Toki 主题：首页、任务页连续背景、原版 `Toki Codex` 字标、原生项目文件夹图标、主题设置入口与安全恢复均由外部引擎加载，不修改 `app.asar`。
+
+在另一台电脑上部署时，先安装官方 Microsoft Store Codex 与 [Node.js 22 或更高版本](https://nodejs.org/)，关闭 Codex 和旧的 Dream Skin 托盘，然后运行：
+
+```powershell
+git clone --branch toki/engine-1.2.0 --single-branch https://github.com/eistinlandfrank/Codex-Dream-Skin.git
+cd .\Codex-Dream-Skin\windows
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-toki-dream-skin.ps1
+```
+
+安装完成后，从桌面打开 `Toki Codex（飞鸟马时）`。主题控制和恢复快捷方式也会同时安装；源码目录随后可以移动或删除。
+
 安装命令中的 `Bypass` 只作用于这一次由用户明确发起的安装进程。安装器会先校验运行时副本的 SHA-256，再仅对 `%LOCALAPPDATA%\CodexDreamSkin\engine` 中受管的 PowerShell 副本清除下载区标记。日常快捷方式使用 `RemoteSigned`，不会绕过系统或企业组策略。
 
 如需使用自定义端口，可以在安装时传入 `-Port`。端口范围必须是 `1024` 到 `65535`。

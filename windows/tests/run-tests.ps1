@@ -740,6 +740,22 @@ try {
   if (-not $reparseInitRejected) { throw 'Theme-store initialization followed an active-theme junction.' }
   [System.IO.Directory]::Delete($reparseActive)
 
+  $tokiAssetDirectory = Join-Path $temporaryRoot 'toki-theme'
+  New-Item -ItemType Directory -Path $tokiAssetDirectory | Out-Null
+  Copy-Item -LiteralPath (Join-Path $Root 'assets\toki-reference.png') `
+    -Destination (Join-Path $tokiAssetDirectory 'toki-reference.png')
+  Copy-Item -LiteralPath (Join-Path $Root 'assets\toki-theme.json') `
+    -Destination (Join-Path $tokiAssetDirectory 'theme.json')
+  $tokiTheme = Read-DreamSkinTheme -ThemeDirectory $tokiAssetDirectory
+  $tokiImageHash = (Get-FileHash -LiteralPath $tokiTheme.ImagePath -Algorithm SHA256).Hash
+  if ($tokiTheme.Theme.id -cne 'preset-toki-bunny-04' -or
+    $tokiTheme.Theme.variant -cne 'toki' -or
+    $tokiTheme.Theme.appearance -cne 'light' -or
+    $tokiTheme.Theme.brandTitle -cne 'Toki Codex' -or
+    $tokiImageHash -cne '0A5243DE641A76EF3C3A43EF82BDA9CAFD8ED3459656BA08C7904A3A8DA028C3') {
+    throw 'The bundled Toki theme contract or pinned reference art changed unexpectedly.'
+  }
+
   $css = Read-DreamSkinUtf8File -Path (Join-Path $Root 'assets\dream-skin.css')
   foreach ($requiredCss in @(
     'background-image: var(--dream-art)',
@@ -755,6 +771,49 @@ try {
   )) {
     if (-not $css.Contains($requiredCss)) { throw "Windows immersive CSS is missing: $requiredCss" }
   }
+  $tokiCss = Read-DreamSkinUtf8File -Path (Join-Path $Root 'assets\toki-skin.css')
+  foreach ($requiredTokiCss in @(
+    'html.codex-dream-skin.dream-skin-toki',
+    '.dream-toki-card-1',
+    '.dream-toki-card-4',
+    '.dream-toki-project-logo',
+    '.dream-toki-settings-button',
+    '.dream-toki-polaroid',
+    '.dream-task',
+    'Native suggestion cards are absolutely positioned below this hero.',
+    'overflow: visible !important'
+  )) {
+    if (-not $tokiCss.Contains($requiredTokiCss)) { throw "Toki theme CSS is missing: $requiredTokiCss" }
+  }
+  $tokiBrandRule = [regex]::Match($tokiCss, '(?is)\.dream-toki-brand-name\s*\{(?<Body>[^}]*)\}')
+  if (-not $tokiBrandRule.Success) { throw 'Toki brand typography rule is missing.' }
+  $tokiBrandBody = $tokiBrandRule.Groups['Body'].Value
+  if ($tokiBrandBody -match '(?i)Segoe Script|\bcursive\b|font-style\s*:\s*italic\b') {
+    throw 'Toki brand no longer uses the original rounded sans-serif typography.'
+  }
+  if ($tokiCss -match '(?is)\.dream-toki-project-logo\s*>\s*\*\s*\{[^}]*\bvisibility\s*:\s*hidden\b') {
+    throw 'Toki CSS hides Codex native project folder icons.'
+  }
+  if ($tokiCss -match '(?is)\.dream-toki-project-logo::before\s*\{[^}]*\bcontent\s*:') {
+    throw 'Toki CSS replaces native project folder icons with pseudo-element glyphs.'
+  }
+  if ($tokiCss -match '(?im)(?:-webkit-)?backdrop-filter\s*:(?![ \t]*none\b)[^;]+|background-attachment\s*:\s*fixed|animation\s*:') {
+    throw 'Toki CSS reintroduced blur, fixed backgrounds, or continuous animation.'
+  }
+  $tokiInstallerSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\install-toki-dream-skin.ps1')
+  if ([regex]::IsMatch($tokiInstallerSource, '[^\x00-\x7f]') -or
+    -not $tokiInstallerSource.Contains('\uff08\u98de\u9e1f\u9a6c\u65f6\uff09') -or
+    -not $tokiInstallerSource.Contains('-WindowStyle Minimized') -or
+    $tokiInstallerSource.Contains('-WindowStyle Hidden')) {
+    throw 'The Toki shortcut installer is not Windows PowerShell 5.1 encoding-safe or uses a blocked hidden shortcut.'
+  }
+  $tokiInstallerParseErrors = $null
+  [System.Management.Automation.Language.Parser]::ParseFile(
+    (Join-Path $Root 'scripts\install-toki-dream-skin.ps1'),
+    [ref]$null,
+    [ref]$tokiInstallerParseErrors
+  ) | Out-Null
+  if (@($tokiInstallerParseErrors).Count -gt 0) { throw 'The Toki shortcut installer has a PowerShell parse error.' }
   $traySource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\tray-dream-skin.ps1')
   foreach ($requiredTrayAction in @('System.Windows.Forms.NotifyIcon', '暂停皮肤', '更换背景图', '已保存主题', '完全恢复 Codex')) {
     if (-not $traySource.Contains($requiredTrayAction)) { throw "Tray action is missing: $requiredTrayAction" }
@@ -801,7 +860,11 @@ try {
   }
 
   $rendererSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'assets\renderer-inject.js')
-  foreach ($requiredRendererBehavior in @('dream-home-utility', 'artMetadata', 'detectShellAppearance')) {
+  foreach ($requiredRendererBehavior in @(
+    'dream-home-utility', 'artMetadata', 'detectShellAppearance', 'ensureTokiDom',
+    'dream-toki-settings-row', 'dream-toki-polaroid', 'dream-toki-card',
+    'document.visibilityState === "visible"', '}, 30000)'
+  )) {
     if (-not $rendererSource.Contains($requiredRendererBehavior)) {
       throw "Renderer adaptive behavior is missing: $requiredRendererBehavior"
     }
@@ -854,12 +917,18 @@ try {
   $managedPayloadTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $Root 'scripts\injector.mjs'), '--check-payload', '--theme-dir', $themePaths.Active)
   if ($managedPayloadTest.ExitCode -ne 0) { throw 'Managed theme payload validation failed.' }
+  $tokiPayloadTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
+    (Join-Path $Root 'scripts\injector.mjs'), '--check-payload', '--theme-dir', $tokiAssetDirectory)
+  if ($tokiPayloadTest.ExitCode -ne 0) { throw 'Toki theme payload validation failed.' }
   $oversizedPayloadTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $Root 'scripts\injector.mjs'), '--check-payload', '--theme-dir', $oversizedTheme)
   if ($oversizedPayloadTest.ExitCode -eq 0) { throw 'Node injector accepted an image over the 16 MB limit.' }
   $rendererTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $PSScriptRoot 'renderer-inject.test.mjs'))
   if ($rendererTest.ExitCode -ne 0) { throw 'Renderer auxiliary-window regression test failed.' }
+  $tokiRendererTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
+    (Join-Path $PSScriptRoot 'renderer-toki.test.mjs'))
+  if ($tokiRendererTest.ExitCode -ne 0) { throw 'Toki renderer and cleanup regression test failed.' }
   $bootstrapTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $PSScriptRoot 'injector-bootstrap.test.mjs'))
   if ($bootstrapTest.ExitCode -ne 0) { throw 'Injector early-bootstrap regression test failed.' }

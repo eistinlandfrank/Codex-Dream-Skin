@@ -18,6 +18,8 @@
     "dream-task-ambient",
     "dream-task-banner",
     "dream-task-off",
+    "dream-skin-toki",
+    "dream-toki-home",
   ];
   const ROOT_PROPERTIES = [
     "--dream-art",
@@ -29,9 +31,26 @@
     "--dream-image-luma",
   ];
   const HOME_UTILITY_CLASS = "dream-home-utility";
+  const TOKI_CARD_CLASS = "dream-toki-card";
+  const TOKI_SETTINGS_ROW_ID = "dream-toki-settings-row";
+  const TOKI_POLAROID_ID = "dream-toki-polaroid";
+  const TOKI_ORIGINAL_TEXT = "data-dream-toki-original-text";
+  const TOKI_RELEVANT_SELECTOR = [
+    "main.main-surface",
+    "aside.app-shell-left-panel",
+    '[role="main"]',
+    '[data-testid="home-icon"]',
+    ".composer-surface-chrome",
+    ".group\\/home-suggestions",
+    "[data-home-ambient-suggestions]",
+    "[data-app-action-sidebar-project-row]",
+    'button[aria-haspopup="menu"]',
+    '[class*="bottom-0"]',
+  ].join(",");
   const installToken = {};
   let samplingNativeShell = false;
   let observer = null;
+  let lastProfileSignature = "";
   window.__CODEX_DREAM_SKIN_DISABLED__ = false;
 
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, Number(value)));
@@ -73,8 +92,19 @@
     const taskMode = ["auto", "ambient", "banner", "off"].includes(art.taskMode)
       ? art.taskMode
       : "auto";
+    const cleanLabel = (candidate, fallback, limit = 80) => {
+      if (typeof candidate !== "string") return fallback;
+      const cleaned = candidate.replace(/[\u0000-\u001f\u007f]/g, " ").trim();
+      return cleaned ? cleaned.slice(0, limit) : fallback;
+    };
+    const themeId = cleanLabel(config.id, "", 96);
+    const variant = config.variant === "toki" || /^preset-toki(?:-|$)/i.test(themeId)
+      ? "toki"
+      : "default";
     const metadataRatio = Number(config?.artMetadata?.ratio);
     return {
+      themeId,
+      variant,
       appearance,
       safeArea,
       taskMode,
@@ -82,14 +112,27 @@
       focusY: hasNumber(art.focusY) ? clamp(art.focusY) : null,
       accent: safeAccent,
       initialAspect: Number.isFinite(metadataRatio) && metadataRatio > 0 ? metadataRatio : null,
+      labels: {
+        brandTitle: cleanLabel(config.brandTitle, "Toki Codex", 40),
+        brandMark: cleanLabel(config.brandMark, "· 04", 16),
+        settingsLabel: cleanLabel(config.settingsLabel, "主题设置", 32),
+        settingsStatus: cleanLabel(config.settingsStatus, "外观", 20),
+        photoTitle: cleanLabel(config.photoTitle, "TOKI · 04", 40),
+        photoCaption: cleanLabel(config.photoCaption, "Be with Toki", 60),
+      },
     };
   };
 
   const previous = window[STATE_KEY];
-  if (previous?.observer) previous.observer.disconnect();
-  if (previous?.timer) clearInterval(previous.timer);
-  if (previous?.scheduler?.timeout) clearTimeout(previous.scheduler.timeout);
-  if (previous?.artUrl) URL.revokeObjectURL(previous.artUrl);
+  if (typeof previous?.cleanup === "function") {
+    previous.cleanup();
+  } else {
+    if (previous?.observer) previous.observer.disconnect();
+    if (previous?.timer) clearInterval(previous.timer);
+    if (previous?.scheduler?.timeout) clearTimeout(previous.scheduler.timeout);
+    if (previous?.artUrl) URL.revokeObjectURL(previous.artUrl);
+  }
+  window.__CODEX_DREAM_SKIN_DISABLED__ = false;
   const artUrl = (() => {
     const comma = artDataUrl.indexOf(",");
     const binary = atob(artDataUrl.slice(comma + 1));
@@ -275,8 +318,202 @@
     return "light";
   };
 
+  const setTokiText = (node, value, className) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (!node.hasAttribute(TOKI_ORIGINAL_TEXT)) {
+      node.setAttribute(TOKI_ORIGINAL_TEXT, node.textContent || "");
+    }
+    if (node.textContent !== value) node.textContent = value;
+    if (className) node.classList.add(className);
+  };
+
+  const createTokiSettingsIcon = () => {
+    const namespace = "http://www.w3.org/2000/svg";
+    const icon = document.createElementNS(namespace, "svg");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("aria-hidden", "true");
+    icon.classList.add("dream-toki-settings-icon");
+    const path = document.createElementNS(namespace, "path");
+    path.setAttribute("d", "M4 7h8m4 0h4M4 17h3m4 0h9M12 4v6M7 14v6");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke-linecap", "round");
+    icon.appendChild(path);
+    return icon;
+  };
+
+  const ensureTokiSettingsRow = (sidebar) => {
+    const existing = document.getElementById(TOKI_SETTINGS_ROW_ID);
+    if (existing instanceof HTMLElement) return;
+    const profileButton = Array.from(sidebar.querySelectorAll("button")).find((button) =>
+      /(?:个人资料|profile).*(?:菜单|menu)/i.test(button.getAttribute("aria-label") || "")
+    );
+    const footer = profileButton?.closest(".absolute.inset-x-0.bottom-0.z-20") ||
+      Array.from(sidebar.querySelectorAll("div")).find((node) => {
+        const className = typeof node.className === "string" ? node.className : "";
+        return className.includes("absolute") && className.includes("bottom-0") &&
+          className.includes("inset-x-0");
+      });
+    if (!(footer instanceof HTMLElement)) return;
+
+    const row = document.createElement("div");
+    row.id = TOKI_SETTINGS_ROW_ID;
+    row.className = "dream-toki-settings-row";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "dream-toki-settings-button";
+    button.setAttribute("aria-label", "打开 Toki 外观设置");
+    button.title = "打开外观设置";
+    button.addEventListener("click", () => {
+      window.postMessage({ type: "navigate-to-route", path: "/settings/appearance" }, "*");
+    });
+    button.append(createTokiSettingsIcon());
+    const label = document.createElement("span");
+    label.className = "dream-toki-settings-label";
+    label.textContent = config.labels.settingsLabel;
+    const status = document.createElement("span");
+    status.className = "dream-toki-settings-status";
+    status.textContent = config.labels.settingsStatus;
+    status.setAttribute("aria-hidden", "true");
+    button.append(label, status);
+    row.appendChild(button);
+    footer.prepend(row);
+  };
+
+  const decorateTokiSidebar = (sidebar) => {
+    sidebar.classList.add("dream-toki-sidebar");
+    const sidebarRect = sidebar.getBoundingClientRect();
+    const brandButton = sidebar.querySelector(".dream-toki-brand-button") ||
+      Array.from(sidebar.querySelectorAll('button[aria-haspopup="menu"]')).find((button) => {
+        const rect = button.getBoundingClientRect();
+        return rect.top >= sidebarRect.top && rect.top < sidebarRect.top + 96;
+      });
+    if (brandButton instanceof HTMLElement) {
+      brandButton.classList.add("dream-toki-brand-button");
+      const labels = brandButton.querySelectorAll("span");
+      setTokiText(labels[0], config.labels.brandTitle, "dream-toki-brand-name");
+      setTokiText(labels[1], config.labels.brandMark, "dream-toki-brand-mark");
+    }
+
+    Array.from(sidebar.querySelectorAll("[data-app-action-sidebar-project-row]")).forEach((row, index) => {
+      row.classList.add("dream-toki-project-row");
+      row.dataset.dreamTokiLogoIndex = String(index % 8);
+      row.querySelector('[data-sidebar-project-drop-zone="project-icon"]')
+        ?.classList.add("dream-toki-project-logo");
+    });
+    ensureTokiSettingsRow(sidebar);
+  };
+
+  const decorateTokiCards = (home) => {
+    const selectors = [
+      '.group\\/home-suggestions button',
+      '[data-home-ambient-suggestions] button',
+    ].join(",");
+    const candidates = home ? Array.from(home.querySelectorAll(selectors)) : [];
+    const liveCards = Array.from(new Set(candidates)).slice(0, 4);
+    document.querySelectorAll(`.${TOKI_CARD_CLASS}`).forEach((card) => {
+      if (liveCards.includes(card)) return;
+      card.classList.remove(TOKI_CARD_CLASS);
+      for (let index = 1; index <= 4; index += 1) {
+        card.classList.remove(`${TOKI_CARD_CLASS}-${index}`);
+      }
+      delete card.dataset.dreamTokiCardIndex;
+      if (card.dataset.dreamTokiForcedEnabled === "true" && card instanceof HTMLButtonElement) {
+        card.disabled = true;
+      }
+      delete card.dataset.dreamTokiForcedEnabled;
+    });
+    liveCards.forEach((card, index) => {
+      const cardIndex = String(index + 1);
+      card.classList.add(TOKI_CARD_CLASS, `${TOKI_CARD_CLASS}-${cardIndex}`);
+      card.dataset.dreamTokiCardIndex = cardIndex;
+      if (card instanceof HTMLButtonElement && card.disabled) {
+        card.dataset.dreamTokiForcedEnabled = "true";
+        card.disabled = false;
+      }
+    });
+  };
+
+  const ensureTokiPolaroid = (shellMain, home) => {
+    const existing = document.getElementById(TOKI_POLAROID_ID);
+    if (!home) {
+      existing?.remove();
+      return;
+    }
+    if (existing instanceof HTMLElement) {
+      if (existing.parentElement !== shellMain) shellMain.appendChild(existing);
+      return;
+    }
+    const figure = document.createElement("figure");
+    figure.id = TOKI_POLAROID_ID;
+    figure.className = "dream-toki-polaroid";
+    figure.setAttribute("aria-hidden", "true");
+    const photo = document.createElement("div");
+    photo.className = "dream-toki-polaroid-photo";
+    const image = document.createElement("img");
+    image.alt = "";
+    image.draggable = false;
+    image.src = artUrl;
+    photo.appendChild(image);
+    const caption = document.createElement("figcaption");
+    const title = document.createElement("strong");
+    title.textContent = config.labels.photoTitle;
+    const note = document.createElement("span");
+    note.textContent = config.labels.photoCaption;
+    caption.append(title, note);
+    figure.append(photo, caption);
+    shellMain.appendChild(figure);
+  };
+
+  const clearTokiDom = () => {
+    document.getElementById(TOKI_SETTINGS_ROW_ID)?.remove();
+    document.getElementById(TOKI_POLAROID_ID)?.remove();
+    document.querySelectorAll(`[${TOKI_ORIGINAL_TEXT}]`).forEach((node) => {
+      node.textContent = node.getAttribute(TOKI_ORIGINAL_TEXT) || "";
+      node.removeAttribute(TOKI_ORIGINAL_TEXT);
+      node.classList.remove("dream-toki-brand-name", "dream-toki-brand-mark");
+    });
+    document.querySelectorAll(".dream-toki-brand-button").forEach((node) =>
+      node.classList.remove("dream-toki-brand-button"));
+    document.querySelectorAll(".dream-toki-sidebar").forEach((node) =>
+      node.classList.remove("dream-toki-sidebar"));
+    document.querySelectorAll(".dream-toki-project-row").forEach((node) => {
+      node.classList.remove("dream-toki-project-row");
+      delete node.dataset.dreamTokiLogoIndex;
+    });
+    document.querySelectorAll(".dream-toki-project-logo").forEach((node) =>
+      node.classList.remove("dream-toki-project-logo"));
+    document.querySelectorAll(`.${TOKI_CARD_CLASS}`).forEach((card) => {
+      card.classList.remove(TOKI_CARD_CLASS);
+      for (let index = 1; index <= 4; index += 1) {
+        card.classList.remove(`${TOKI_CARD_CLASS}-${index}`);
+      }
+      delete card.dataset.dreamTokiCardIndex;
+      if (card.dataset.dreamTokiForcedEnabled === "true" && card instanceof HTMLButtonElement) {
+        card.disabled = true;
+      }
+      delete card.dataset.dreamTokiForcedEnabled;
+    });
+  };
+
+  const ensureTokiDom = (root, shellMain, sidebar, home) => {
+    const enabled = config.variant === "toki";
+    root.classList.toggle("dream-skin-toki", enabled);
+    root.classList.toggle("dream-toki-home", enabled && Boolean(home));
+    if (!enabled) {
+      clearTokiDom();
+      return;
+    }
+    decorateTokiSidebar(sidebar);
+    decorateTokiCards(home);
+    ensureTokiPolaroid(shellMain, home);
+  };
+
   const clearSkinDom = () => {
     const root = document.documentElement;
+    clearTokiDom();
+    lastProfileSignature = "";
     root?.classList.remove(...ROOT_CLASSES);
     for (const property of ROOT_PROPERTIES) root?.style.removeProperty(property);
     document.querySelectorAll(".dream-home").forEach((node) => node.classList.remove("dream-home"));
@@ -299,6 +536,21 @@
       : config.taskMode;
     const accent = config.accent || `rgb(${profile.accent.join(" ")})`;
     const accentInk = luminance(...profile.accent) > .42 ? "rgb(26 24 28)" : "rgb(250 248 251)";
+    const signature = [appearance, focus, safeArea, taskMode, profile.aspect >= 1.75,
+      focusX, focusY, accent, accentInk, profile.luma.toFixed(3)].join("|");
+    const expectedClasses = [
+      `dream-theme-${appearance}`,
+      profile.aspect >= 1.75 ? "dream-art-wide" : "dream-art-standard",
+      `dream-focus-${focus}`,
+      `dream-safe-${safeArea}`,
+      `dream-task-${taskMode}`,
+    ];
+    if (signature === lastProfileSignature &&
+      expectedClasses.every((className) => root.classList.contains(className)) &&
+      root.style.getPropertyValue?.("--dream-art")) {
+      return;
+    }
+    lastProfileSignature = signature;
     root.classList.toggle("dream-theme-light", appearance === "light");
     root.classList.toggle("dream-theme-dark", appearance === "dark");
     root.classList.toggle("dream-art-wide", profile.aspect >= 1.75);
@@ -358,6 +610,7 @@
     }
     for (const candidate of utilityBars) candidate.classList.add(HOME_UTILITY_CLASS);
     shellMain.classList.toggle("dream-home-shell", Boolean(home));
+    ensureTokiDom(root, shellMain, shellSidebar, home);
 
     let chrome = document.getElementById(CHROME_ID);
     if (!chrome || chrome.parentElement !== document.body) {
@@ -385,23 +638,53 @@
 
   const scheduler = { timeout: null };
   const scheduleEnsure = () => {
-    if (scheduler.timeout) clearTimeout(scheduler.timeout);
+    if (scheduler.timeout) return;
     scheduler.timeout = setTimeout(() => {
       scheduler.timeout = null;
       ensure();
-    }, 180);
+    }, 72);
   };
-  observer = new MutationObserver(() => {
+  const nodeTouchesRelevantUi = (node) => {
+    if (!(node instanceof Element)) return false;
+    return node.matches(TOKI_RELEVANT_SELECTOR) || Boolean(node.querySelector(TOKI_RELEVANT_SELECTOR));
+  };
+  observer = new MutationObserver((records) => {
     if (samplingNativeShell) return;
-    scheduleEnsure();
+    let relevant = false;
+    for (const record of records) {
+      if (record.type === "attributes") {
+        const target = record.target;
+        if (record.attributeName === "disabled" && config.variant === "toki" &&
+          target instanceof HTMLButtonElement &&
+          target.classList.contains(TOKI_CARD_CLASS)) {
+          if (target.disabled) {
+            target.dataset.dreamTokiForcedEnabled = "true";
+            target.disabled = false;
+          }
+          relevant = true;
+          continue;
+        }
+        if (target === document.documentElement || target === document.body || nodeTouchesRelevantUi(target)) {
+          relevant = true;
+        }
+        continue;
+      }
+      if (nodeTouchesRelevantUi(record.target) ||
+        [...record.addedNodes, ...record.removedNodes].some(nodeTouchesRelevantUi)) {
+        relevant = true;
+      }
+    }
+    if (relevant) scheduleEnsure();
   });
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ["class", "data-theme", "data-appearance", "data-color-mode"],
+    attributeFilter: ["class", "disabled", "data-theme", "data-appearance", "data-color-mode"],
   });
-  const timer = setInterval(ensure, 5000);
+  const timer = setInterval(() => {
+    if (document.visibilityState === "visible") ensure();
+  }, 30000);
   window[STATE_KEY] = {
     ensure, cleanup, observer, timer, scheduler, artUrl, profile, config, installToken, version: "1.2.0",
   };

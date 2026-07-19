@@ -283,6 +283,7 @@ async function connectBrowserIdentityAnchor(port, expectedBrowserId) {
 }
 
 const THEME_CHOICES = {
+  variant: new Set(["default", "toki"]),
   appearance: new Set(["auto", "light", "dark"]),
   safeArea: new Set(["auto", "left", "right", "center", "none"]),
   taskMode: new Set(["auto", "ambient", "banner", "off"]),
@@ -341,6 +342,7 @@ async function loadTheme(themeDir) {
   const theme = {
     id: normalizedText(raw.id, "id", "custom", 80),
     name: normalizedText(raw.name, "name", "Codex Dream Skin", 120),
+    variant: normalizedChoice(raw.variant, "variant", THEME_CHOICES.variant, "default"),
     image,
     appearance: normalizedChoice(raw.appearance, "appearance", THEME_CHOICES.appearance, "auto"),
     art: {
@@ -351,6 +353,16 @@ async function loadTheme(themeDir) {
     },
     palette: {},
   };
+  for (const [key, fallback, maximum] of [
+    ["brandTitle", "Toki Codex", 40],
+    ["brandMark", "\u00b7 04", 16],
+    ["settingsLabel", "\u4e3b\u9898\u8bbe\u7f6e", 32],
+    ["settingsStatus", "\u5916\u89c2", 20],
+    ["photoTitle", "TOKI \u00b7 04", 40],
+    ["photoCaption", "Be with Toki", 60],
+  ]) {
+    theme[key] = normalizedText(raw[key], key, fallback, maximum);
+  }
   if (typeof palette.accent === "string" && palette.accent.trim()) {
     const accent = palette.accent.trim();
     if (!/^(?:#[\da-f]{3,8}|(?:rgb|hsl|oklch|oklab)\([^;{}]{1,96}\))$/i.test(accent)) {
@@ -390,10 +402,12 @@ async function loadTheme(themeDir) {
 
 async function loadPayload(themeDir = path.join(root, "assets"), candidateTheme = null) {
   const loadedTheme = candidateTheme ?? await loadTheme(themeDir);
-  const [css, template] = await Promise.all([
+  const [baseCss, tokiCss, template] = await Promise.all([
     fs.readFile(path.join(root, "assets", "dream-skin.css"), "utf8"),
+    fs.readFile(path.join(root, "assets", "toki-skin.css"), "utf8"),
     fs.readFile(path.join(root, "assets", "renderer-inject.js"), "utf8"),
   ]);
+  const css = `${baseCss}\n${tokiCss}`;
   const extension = path.extname(loadedTheme.imagePath).toLowerCase();
   const mime = extension === ".jpg" || extension === ".jpeg" ? "image/jpeg"
     : extension === ".webp" ? "image/webp" : "image/png";
@@ -549,7 +563,8 @@ async function removeFromSession(session) {
       'dream-art-wide', 'dream-art-standard', 'dream-focus-left',
       'dream-focus-center', 'dream-focus-right', 'dream-safe-left',
       'dream-safe-center', 'dream-safe-right', 'dream-safe-none',
-      'dream-task-ambient', 'dream-task-banner', 'dream-task-off'
+      'dream-task-ambient', 'dream-task-banner', 'dream-task-off',
+      'dream-skin-toki', 'dream-toki-home'
     );
     for (const property of [
       '--dream-art', '--dream-art-position', '--dream-focus-x', '--dream-focus-y',
@@ -558,6 +573,28 @@ async function removeFromSession(session) {
     document.querySelectorAll('.dream-home').forEach((node) => node.classList.remove('dream-home'));
     document.querySelectorAll('.dream-task').forEach((node) => node.classList.remove('dream-task'));
     document.querySelectorAll('.dream-home-shell').forEach((node) => node.classList.remove('dream-home-shell'));
+    document.querySelectorAll('.dream-home-utility').forEach((node) => node.classList.remove('dream-home-utility'));
+    document.getElementById('dream-toki-settings-row')?.remove();
+    document.getElementById('dream-toki-polaroid')?.remove();
+    document.querySelectorAll('[data-dream-toki-original-text]').forEach((node) => {
+      node.textContent = node.getAttribute('data-dream-toki-original-text') || '';
+      node.removeAttribute('data-dream-toki-original-text');
+      node.classList.remove('dream-toki-brand-name', 'dream-toki-brand-mark');
+    });
+    document.querySelectorAll('.dream-toki-brand-button').forEach((node) => node.classList.remove('dream-toki-brand-button'));
+    document.querySelectorAll('.dream-toki-sidebar').forEach((node) => node.classList.remove('dream-toki-sidebar'));
+    document.querySelectorAll('.dream-toki-project-row').forEach((node) => {
+      node.classList.remove('dream-toki-project-row');
+      delete node.dataset.dreamTokiLogoIndex;
+    });
+    document.querySelectorAll('.dream-toki-project-logo').forEach((node) => node.classList.remove('dream-toki-project-logo'));
+    document.querySelectorAll('.dream-toki-card').forEach((node) => {
+      node.classList.remove('dream-toki-card', 'dream-toki-card-1',
+        'dream-toki-card-2', 'dream-toki-card-3', 'dream-toki-card-4');
+      if (node.dataset.dreamTokiForcedEnabled === 'true' && node instanceof HTMLButtonElement) node.disabled = true;
+      delete node.dataset.dreamTokiCardIndex;
+      delete node.dataset.dreamTokiForcedEnabled;
+    });
     document.getElementById('codex-dream-skin-style')?.remove();
     document.getElementById('codex-dream-skin-chrome')?.remove();
     delete window.__CODEX_DREAM_SKIN_STATE__;
@@ -572,6 +609,11 @@ async function verifyRemovedSession(session) {
     !document.querySelector('.dream-home') &&
     !document.querySelector('.dream-task') &&
     !document.querySelector('.dream-home-shell') &&
+    !document.querySelector('.dream-home-utility') &&
+    !document.querySelector('.dream-toki-sidebar') &&
+    !document.querySelector('.dream-toki-card') &&
+    !document.getElementById('dream-toki-settings-row') &&
+    !document.getElementById('dream-toki-polaroid') &&
     !document.getElementById('codex-dream-skin-style') &&
     !document.getElementById('codex-dream-skin-chrome') &&
     !window.__CODEX_DREAM_SKIN_STATE__
