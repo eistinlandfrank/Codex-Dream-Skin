@@ -31,6 +31,7 @@
     "--dream-accent-ink",
     "--dream-image-luma",
   ];
+  const HOME_CONTENT_CLASS = "dream-home-content";
   const HOME_UTILITY_CLASS = "dream-home-utility";
   const TOKI_CARD_CLASS = "dream-toki-card";
   const TOKI_COMPOSER_WRAP_CLASS = "dream-toki-composer-wrap";
@@ -637,6 +638,7 @@
     root?.classList.remove(...ROOT_CLASSES);
     for (const property of ROOT_PROPERTIES) root?.style.removeProperty(property);
     document.querySelectorAll(".dream-home").forEach((node) => node.classList.remove("dream-home"));
+    document.querySelectorAll(`.${HOME_CONTENT_CLASS}`).forEach((node) => node.classList.remove(HOME_CONTENT_CLASS));
     document.querySelectorAll(".dream-task").forEach((node) => node.classList.remove("dream-task"));
     document.querySelectorAll(".dream-home-shell").forEach((node) => node.classList.remove("dream-home-shell"));
     document.querySelectorAll(`.${HOME_UTILITY_CLASS}`).forEach((node) => node.classList.remove(HOME_UTILITY_CLASS));
@@ -720,6 +722,15 @@
     }
 
     const home = document.querySelector('[role="main"]:has([data-testid="home-icon"])');
+    const homeContent = home
+      ? Array.from(home.children || []).find((candidate) =>
+          candidate.querySelector?.('[data-testid="home-icon"]') &&
+          candidate.querySelector?.('.composer-surface-chrome')) || null
+      : null;
+    for (const candidate of document.querySelectorAll(`.${HOME_CONTENT_CLASS}`)) {
+      if (candidate !== homeContent) candidate.classList.remove(HOME_CONTENT_CLASS);
+    }
+    homeContent?.classList.add(HOME_CONTENT_CLASS);
     for (const candidate of document.querySelectorAll('[role="main"]')) {
       candidate.classList.toggle("dream-home", candidate === home);
       candidate.classList.toggle("dream-task", candidate !== home);

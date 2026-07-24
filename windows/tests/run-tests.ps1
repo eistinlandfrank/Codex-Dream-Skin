@@ -777,6 +777,7 @@ try {
     '.thread-scroll-container .bg-gradient-to-t.from-token-main-surface-primary',
     '--dream-immersive-composer',
     'background-position: var(--dream-art-position)',
+    'dream-home-content',
     '.dream-home-utility',
     ':has(.dream-home-utility) .composer-surface-chrome',
     ':is(.dream-task-ambient, .dream-task-banner):has(main.main-surface:not(.dream-home-shell))'
@@ -791,6 +792,7 @@ try {
     '.dream-toki-project-logo',
     '.dream-toki-settings-button',
     '.dream-toki-polaroid',
+    'dream-home-content',
     '.dream-task',
     'Native suggestion cards are absolutely positioned below this hero.',
     'overflow: visible !important'
@@ -873,7 +875,7 @@ try {
 
   $rendererSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'assets\renderer-inject.js')
   foreach ($requiredRendererBehavior in @(
-    'dream-home-utility', 'artMetadata', 'detectShellAppearance', 'ensureTokiDom',
+    'dream-home-content', 'dream-home-utility', 'artMetadata', 'detectShellAppearance', 'ensureTokiDom',
     'dream-toki-settings-row', 'dream-toki-polaroid', 'dream-toki-card',
     'dream-toki-fallback-cards', 'seedTokiPrompt',
     'document.visibilityState === "visible"', '}, 30000)',

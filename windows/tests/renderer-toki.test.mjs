@@ -68,7 +68,7 @@ function splitDescendantSelector(selector) {
   return parts;
 }
 
-function createFixture({ nativeSuggestions = true } = {}) {
+function createFixture({ nativeSuggestions = true, wrappedHomeContent = false } = {}) {
   const observers = [];
   const timeouts = new Map();
   const intervals = new Map();
@@ -436,8 +436,9 @@ function createFixture({ nativeSuggestions = true } = {}) {
     suggestions.appendChild(card);
     return card;
   });
-  home.appendChild(homeIcon);
-  if (nativeSuggestions) home.appendChild(suggestions);
+  const homeContent = wrappedHomeContent ? document.createElement("div") : home;
+  homeContent.appendChild(homeIcon);
+  if (nativeSuggestions) homeContent.appendChild(suggestions);
   const composerWrapper = document.createElement("div");
   composerWrapper.className = "mx-auto w-full max-w-(--thread-content-max-width)";
   const composer = document.createElement("div");
@@ -447,7 +448,12 @@ function createFixture({ nativeSuggestions = true } = {}) {
   editor.setAttribute("contenteditable", "true");
   composer.appendChild(editor);
   composerWrapper.appendChild(composer);
-  home.appendChild(composerWrapper);
+  homeContent.appendChild(composerWrapper);
+  if (wrappedHomeContent) {
+    const banners = document.createElement("div");
+    banners.classList.add("home-banners");
+    home.append(banners, homeContent);
+  }
   shellMain.appendChild(home);
 
   const context = {
@@ -541,6 +547,7 @@ function createFixture({ nativeSuggestions = true } = {}) {
     projectLogo,
     footer,
     home,
+    homeContent,
     homeIcon,
     suggestions,
     cards,
@@ -609,6 +616,19 @@ assert.equal(fixture.root.classList.contains("dream-toki-home"), true);
 assert.ok(fixture.document.getElementById("dream-toki-polaroid"));
 assert.equal(fixture.composerWrapper.classList.contains("dream-toki-composer-wrap"), true);
 fixture.cards.forEach((card) => assert.equal(card.disabled, false));
+
+const wrapped = createFixture({ wrappedHomeContent: true });
+vm.runInNewContext(payload, wrapped.context);
+await Promise.resolve();
+wrapped.settle();
+assert.equal(wrapped.home.classList.contains("dream-home"), true,
+  "The home route must keep the route-level skin state.");
+assert.equal(wrapped.homeContent.classList.contains("dream-home-content"), true,
+  "The direct child containing both the home icon and composer must be marked as the layout content.");
+assert.equal(wrapped.composerWrapper.classList.contains("dream-toki-composer-wrap"), true);
+assert.equal(wrapped.context.window.__CODEX_DREAM_SKIN_STATE__.cleanup(), true);
+assert.equal(wrapped.homeContent.classList.contains("dream-home-content"), false,
+  "Cleanup must remove the compatibility marker.");
 
 const state = fixture.context.window.__CODEX_DREAM_SKIN_STATE__;
 assert.equal(state.cleanup(), true);

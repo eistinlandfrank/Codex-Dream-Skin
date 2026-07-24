@@ -601,6 +601,7 @@ async function removeFromSession(session) {
       '--dream-accent', '--dream-accent-ink', '--dream-image-luma'
     ]) document.documentElement?.style.removeProperty(property);
     document.querySelectorAll('.dream-home').forEach((node) => node.classList.remove('dream-home'));
+    document.querySelectorAll('.dream-home-content').forEach((node) => node.classList.remove('dream-home-content'));
     document.querySelectorAll('.dream-task').forEach((node) => node.classList.remove('dream-task'));
     document.querySelectorAll('.dream-home-shell').forEach((node) => node.classList.remove('dream-home-shell'));
     document.querySelectorAll('.dream-home-utility').forEach((node) => node.classList.remove('dream-home-utility'));
@@ -637,6 +638,7 @@ async function verifyRemovedSession(session) {
     !document.documentElement.classList.contains('codex-dream-skin') &&
     !document.documentElement.style.getPropertyValue('--dream-art') &&
     !document.querySelector('.dream-home') &&
+    !document.querySelector('.dream-home-content') &&
     !document.querySelector('.dream-task') &&
     !document.querySelector('.dream-home-shell') &&
     !document.querySelector('.dream-home-utility') &&
@@ -659,10 +661,16 @@ async function verifySession(session) {
       return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
     };
     const home = document.querySelector('.dream-home');
+    const homeContent = home?.querySelector(':scope > .dream-home-content') ??
+      home?.querySelector(':scope > div:first-child:not(:has(.home-banners))') ?? null;
     const suggestions = home?.querySelector(
       '.group\\\\/home-suggestions, [data-home-ambient-suggestions], #dream-toki-fallback-cards'
     ) ?? null;
     const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
+    const composerBox = box(document.querySelector('.composer-surface-chrome'));
+    const heroBox = box(homeContent?.firstElementChild?.firstElementChild);
+    const cardsClearComposer = !composerBox || cards.every((card) => card.y + card.height <= composerBox.y - 8);
+    const heroUsesAvailableWidth = !heroBox || innerWidth < 1200 || heroBox.width >= 640;
     const result = {
       installed: document.documentElement.classList.contains('codex-dream-skin'),
       version: window.__CODEX_DREAM_SKIN_STATE__?.version ?? null,
@@ -673,9 +681,12 @@ async function verifySession(session) {
       homePresent: Boolean(home),
       tokiHome: document.documentElement.classList.contains('dream-toki-home'),
       suggestionsPresent: Boolean(suggestions),
-      hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
+      homeContentPresent: Boolean(homeContent),
+      hero: heroBox,
       cards,
-      composer: box(document.querySelector('.composer-surface-chrome')),
+      composer: composerBox,
+      cardsClearComposer,
+      heroUsesAvailableWidth,
       sidebar: box(document.querySelector('aside.app-shell-left-panel')),
       viewport: { width: innerWidth, height: innerHeight },
       documentOverflow: {
@@ -688,7 +699,8 @@ async function verifySession(session) {
       result.chromePointerEvents === 'none' && Boolean(result.composer) && Boolean(result.sidebar) &&
       (!result.homePresent || (Boolean(result.hero) &&
         (!result.tokiHome || (result.suggestionsPresent &&
-          result.cards.length >= 2 && result.cards.length <= 4))));
+          result.cards.length >= 2 && result.cards.length <= 4 &&
+          result.cardsClearComposer && result.heroUsesAvailableWidth))));
     return result;
   })()`);
 }
