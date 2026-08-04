@@ -438,6 +438,16 @@ async function listAppTargets(port, expectedBrowserId = null) {
   return targets.filter((item) => isValidCdpPageTarget(item, port));
 }
 
+export function isAvatarOverlayTarget(target) {
+  try {
+    const url = new URL(target?.url || "");
+    return url.protocol === "app:" && url.pathname === "/index.html" &&
+      url.searchParams.get("initialRoute") === "/avatar-overlay";
+  } catch {
+    return false;
+  }
+}
+
 async function connectBrowserIdentityAnchor(port, expectedBrowserId) {
   const version = await fetchCdpJson(port, "/json/version");
   const actualBrowserId = browserIdFromVersion(version, port);
@@ -632,12 +642,20 @@ export async function loadTheme(themeDir) {
 
 export async function loadPayload(themeDir = path.join(root, "assets"), candidateTheme = null) {
   const loadedTheme = candidateTheme ?? await loadTheme(themeDir);
-  const [css, template] = await Promise.all([
+  const tokiTheme = /^preset-toki(?:-|$)/i.test(loadedTheme.theme.id);
+  const [css, template, tokiEnhancements, tokiCss] = await Promise.all([
     fs.readFile(path.join(root, "assets", "dream-skin.css"), "utf8"),
     fs.readFile(path.join(root, "assets", "renderer-inject.js"), "utf8"),
+    fs.readFile(path.join(root, "assets", "toki-enhancements.js"), "utf8"),
+    tokiTheme ? fs.readFile(path.join(root, "assets", "toki-skin.css"), "utf8") : "",
   ]);
+  const brandedCss = tokiTheme ? `${css}\n${tokiCss}\n` : css;
   const combinedCss = loadedTheme.safeCssRuntime
-    ? `${css}\n${loadedTheme.safeCssRuntime}\n` : css;
+    ? `${brandedCss}\n${loadedTheme.safeCssRuntime}\n` : brandedCss;
+  const returnMarker = "\n  return {\n    installed: true,";
+  const returnIndex = template.lastIndexOf(returnMarker);
+  if (returnIndex < 0) throw new Error("Renderer extension point is missing");
+  const runtimeTemplate = `${template.slice(0, returnIndex)}\n;${tokiEnhancements}\n${template.slice(returnIndex)}`;
   const extension = path.extname(loadedTheme.imagePath).toLowerCase();
   const mime = extension === ".jpg" || extension === ".jpeg" ? "image/jpeg"
     : extension === ".webp" ? "image/webp" : "image/png";
@@ -648,7 +666,8 @@ export async function loadPayload(themeDir = path.join(root, "assets"), candidat
   const revision = createHash("sha256")
     .update(SKIN_VERSION)
     .update(combinedCss)
-    .update(template)
+    .update(runtimeTemplate)
+    .update(tokiEnhancements)
     .update(JSON.stringify(loadedTheme.theme))
     .digest("hex")
     .slice(0, 20);
@@ -658,7 +677,7 @@ export async function loadPayload(themeDir = path.join(root, "assets"), candidat
   // replacement would splice the template source back into the payload -- a
   // stray "$`" produced a SyntaxError, while "$&"/"$$" silently corrupted the
   // theme name.
-  const payload = template
+  const payload = runtimeTemplate
     .replace("__DREAM_SKIN_CSS_JSON__", () => JSON.stringify(combinedCss))
     .replace("__DREAM_SKIN_ART_JSON__", () => JSON.stringify(artDataUrl))
     .replace("__DREAM_SKIN_THEME_JSON__", () => JSON.stringify(loadedTheme.theme))
@@ -930,6 +949,60 @@ async function removeEarlyPayload(session, identifier) {
   await session.send("Page.removeScriptToEvaluateOnNewDocument", { identifier }).catch(() => {});
 }
 
+async function loadAvatarOverlayPayload() {
+  return fs.readFile(path.join(root, "assets", "avatar-overlay-inject.js"), "utf8");
+}
+
+export function avatarEarlyPayloadFor(payload) {
+  return `(() => {
+    let timer = null;
+    let timeout = null;
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      if (timeout) clearTimeout(timeout);
+      timer = null;
+      timeout = null;
+    };
+    const install = () => {
+      if (!document.documentElement) return false;
+      ${payload};
+      stop();
+      return true;
+    };
+    if (install()) return;
+    document.addEventListener?.("DOMContentLoaded", install, { once: true });
+    timer = setInterval(install, 100);
+    timeout = setTimeout(stop, 10000);
+  })()`;
+}
+
+async function registerAvatarOverlayPayload(session, payload) {
+  const result = await session.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: avatarEarlyPayloadFor(payload),
+  });
+  return result.identifier ?? null;
+}
+
+export async function setAvatarMotionPreference(session, animate) {
+  const params = animate ? {
+    media: "",
+    features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
+  } : {};
+  await session.send("Emulation.setEmulatedMedia", params);
+}
+
+async function removeAvatarOverlayFromSession(session) {
+  return session.evaluate(`(() => {
+    const state = window.__CODEX_DREAM_SKIN_ACTIVITY_OVERLAY__;
+    if (state?.cleanup) return state.cleanup();
+    document.getElementById('codex-dream-skin-activity-fallback-badge')?.remove();
+    document.getElementById('codex-dream-skin-activity-fallback-panel')?.remove();
+    document.getElementById('codex-dream-skin-activity-fallback-style')?.remove();
+    delete window.__CODEX_DREAM_SKIN_ACTIVITY_OVERLAY__;
+    return true;
+  })()`);
+}
+
 
 function nextOperationToken() {
   operationSequence += 1;
@@ -1103,6 +1176,7 @@ async function presentOperationUi(session, token, state, message, timeoutMs = 10
 async function removeFromSession(session) {
   return session.evaluate(`(() => {
     window.__CODEX_DREAM_SKIN_DISABLED__ = true;
+    try { window.__CODEX_DREAM_SKIN_TOKI__?.cleanup?.(); } catch {}
     const state = window.__CODEX_DREAM_SKIN_STATE__;
     let cleaned = false;
     try { cleaned = Boolean(state?.cleanup && state.cleanup()); } catch {}
@@ -1145,7 +1219,8 @@ async function verifyRemovedSession(session) {
       [...document.adoptedStyleSheets].some((sheet) => sheets.has(sheet)));
     return !hasAttributes && !hasVariables && !hasParts && !hasSheets &&
       !document.getElementById('codex-dream-skin-style') &&
-      !window.__CODEX_DREAM_SKIN_STATE__;
+      !window.__CODEX_DREAM_SKIN_STATE__ && !window.__CODEX_DREAM_SKIN_TOKI__ &&
+      !root.classList.contains('dream-skin-toki');
   })()`);
 }
 
@@ -1218,6 +1293,8 @@ export async function verifySession(
       document.querySelector(${selectorLiteral("appearance-radio")}) ||
       document.querySelector(${stableTestidLiteral("theme-preview")});
     const runtime = window.__CODEX_DREAM_SKIN_STATE__;
+    const tokiExtension = /^preset-toki(?:-|$)/i.test(String(runtime?.themeId || '')) &&
+      Boolean(window.__CODEX_DREAM_SKIN_TOKI__?.version);
     const adopted = runtime?.styleMode === 'adopted' &&
       [...document.adoptedStyleSheets].includes(runtime.styleSheet);
     const fallback = runtime?.styleMode === 'style' &&
@@ -1249,7 +1326,7 @@ export async function verifySession(
       styleMode: runtime?.styleMode ?? null,
       stylePresent: Boolean(adopted || fallback),
       scope: runtime?.scope ?? null,
-      businessClassPollution: [...document.querySelectorAll('[class]')].filter((node) =>
+      businessClassPollution: tokiExtension ? 0 : [...document.querySelectorAll('[class]')].filter((node) =>
         [...node.classList].some((name) => /^(?:dream-|codex-dream-skin(?:-|$))/.test(name))
       ).length,
       homePresent: Boolean(home),
@@ -1518,6 +1595,8 @@ async function runWatch(options) {
   const identityAnchor = await connectBrowserIdentityAnchor(options.port, options.browserId);
   const sessions = new Map();
   const earlyScripts = new Map();
+  const overlaySessions = new Map();
+  const overlayEarlyScripts = new Map();
   const fallbackTargets = new Map();
   const fallbackListeners = new Set();
   const targetFailures = new Map();
@@ -1527,6 +1606,7 @@ async function runWatch(options) {
   let lastThemeErrorLogAt = 0;
   let lastStrongThemeAuditAt = 0;
   let loadedPayload = null;
+  let avatarOverlayPayload = null;
   let paused = false;
   const stop = () => { stopping = true; };
   const rejectTarget = (target, baseDelayMs, error = null) => {
@@ -1561,6 +1641,7 @@ async function runWatch(options) {
   process.on("SIGTERM", stop);
 
   try {
+    avatarOverlayPayload = await loadAvatarOverlayPayload();
     loadedPayload = await loadPayload(options.themeDir);
     lastStrongThemeAuditAt = Date.now();
     paused = await fileExists(options.pauseFile);
@@ -1659,6 +1740,18 @@ async function runWatch(options) {
             sessions.delete(id);
           }
         }
+        if (pauseChanged) {
+          for (const [id, session] of overlaySessions) {
+            try {
+              await removeAvatarOverlayFromSession(session);
+              await setAvatarMotionPreference(session, false);
+              await removeEarlyPayload(session, overlayEarlyScripts.get(id));
+            } catch {}
+            session.close();
+            overlaySessions.delete(id);
+            overlayEarlyScripts.delete(id);
+          }
+        }
         console.log(paused ? "[dream-skin] paused" : `[dream-skin] active theme ${loadedPayload.theme.id}`);
       }
 
@@ -1677,11 +1770,47 @@ async function runWatch(options) {
           targetFailures.delete(id);
         }
       }
+      for (const [id, session] of overlaySessions) {
+        if (!activeIds.has(id) || session.closed) {
+          await removeEarlyPayload(session, overlayEarlyScripts.get(id));
+          overlayEarlyScripts.delete(id);
+          session.close();
+          overlaySessions.delete(id);
+          targetFailures.delete(id);
+        }
+      }
 
       for (const target of targets) {
         if (identityAnchor.closed) break;
-        if (sessions.has(target.id)) continue;
+        if (sessions.has(target.id) || overlaySessions.has(target.id)) continue;
         if ((targetFailures.get(target.id)?.until ?? 0) > Date.now()) continue;
+        if (isAvatarOverlayTarget(target)) {
+          let overlaySession;
+          let overlayEarlyScriptId = null;
+          try {
+            overlaySession = await connectTarget(target, options.port);
+            if (identityAnchor.closed) throw new CdpIdentityMismatchError("Original CDP browser identity closed");
+            if (paused) {
+              await setAvatarMotionPreference(overlaySession, false);
+              await removeAvatarOverlayFromSession(overlaySession);
+            } else {
+              await setAvatarMotionPreference(overlaySession, true);
+              overlayEarlyScriptId = await registerAvatarOverlayPayload(overlaySession, avatarOverlayPayload);
+              if (!overlayEarlyScriptId) throw new Error("CDP did not return an avatar early-script identifier");
+              await overlaySession.evaluate(avatarOverlayPayload);
+            }
+            overlaySessions.set(target.id, overlaySession);
+            if (overlayEarlyScriptId) overlayEarlyScripts.set(target.id, overlayEarlyScriptId);
+            targetFailures.delete(target.id);
+            console.log(`[dream-skin] injected avatar overlay ${target.id}`);
+          } catch (error) {
+            await removeEarlyPayload(overlaySession, overlayEarlyScriptId);
+            overlaySession?.close();
+            if (identityAnchor.closed || error instanceof CdpIdentityMismatchError) break;
+            rejectTarget(target, 2500, error);
+          }
+          continue;
+        }
         let session;
         let earlyScriptId = null;
         try {
@@ -1746,7 +1875,12 @@ async function runWatch(options) {
       await removeEarlyPayload(session, earlyScripts.get(id));
       session.close();
     }
+    for (const [id, session] of overlaySessions) {
+      await removeEarlyPayload(session, overlayEarlyScripts.get(id));
+      session.close();
+    }
     earlyScripts.clear();
+    overlayEarlyScripts.clear();
     fallbackTargets.clear();
     fallbackListeners.clear();
   }
