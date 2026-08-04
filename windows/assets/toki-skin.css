@@ -264,7 +264,7 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) m
 /* Keep task headers native: the canonical skin otherwise adds a generated
    "theme name · CODEX DREAM SKIN" ribbon above the task content. */
 html.codex-dream-skin.dream-skin-toki
-  main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"]):not(:has([role="main"]))
+  main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"]):not(.dream-home-shell)
   > header:is(.app-header-tint, [data-app-shell-header-edge-scroll], [class*="_Header_"])::before {
   content: none !important;
   display: none !important;
@@ -284,17 +284,17 @@ html.codex-dream-skin.dream-skin-toki .dream-home {
   background: transparent !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) {
+html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content {
   min-height: 100% !important;
   padding-top: 18px !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child {
+html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
   flex: 0 0 var(--toki-hero-height) !important;
   min-height: var(--toki-hero-height) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child {
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child {
   width: calc(100% - 48px) !important;
   max-width: 1210px !important;
   height: var(--toki-hero-height) !important;
@@ -317,22 +317,22 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .
   box-shadow: 0 14px 34px rgba(39, 120, 168, .13), inset 0 0 0 1px rgba(255, 255, 255, .55) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child::before {
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before {
   content: "" !important;
   background: linear-gradient(90deg, rgba(239, 249, 255, .88) 0 25%, rgba(239, 249, 255, .34) 53%, transparent 72%) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child::before {
+html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before {
   content: "" !important;
   background: linear-gradient(270deg, rgba(239, 249, 255, .88) 0 25%, rgba(239, 249, 255, .34) 53%, transparent 72%) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child {
+html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
   padding: 32px 42px 194px !important;
 }
 
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-  .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:nth-child(2) {
+  .dream-home > .dream-home-content > div:first-child > div:first-child > div:nth-child(2) {
   inset-inline: 18px !important;
   top: auto !important;
   bottom: 18px !important;
@@ -496,7 +496,7 @@ html.codex-dream-skin.dream-skin-toki .dream-home-utility {
   background: rgba(247, 252, 255, .97) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home:has(.dream-home-utility) .composer-surface-chrome {
+html.codex-dream-skin.dream-skin-toki .dream-home.dream-has-utility .composer-surface-chrome {
   border-top: 0 !important;
 }
 
@@ -749,7 +749,7 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     --thread-content-max-width: min(980px, calc(100cqw - 34px)) !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child {
     width: calc(100% - 34px) !important;
   }
 
@@ -759,26 +759,26 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
 }
 
 @media (max-width: 900px) {
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
     flex-basis: 390px !important;
     min-height: 390px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child {
     height: 225px !important;
     min-height: 225px !important;
     border-radius: 18px !important;
   }
 
   html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-    .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:nth-child(2) {
+    .dream-home > .dream-home-content > div:first-child > div:first-child > div:nth-child(2) {
     inset-inline: 0 !important;
     top: 100% !important;
     bottom: auto !important;
     margin-top: 16px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
     padding: 23px 26px !important;
   }
 
@@ -788,7 +788,7 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     border-radius: 15px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home:has(.dream-toki-fallback-cards)
+  html.codex-dream-skin.dream-skin-toki .dream-home.dream-has-fallback-cards
     > div:first-child > div:first-child {
     flex-basis: 490px !important;
     min-height: 490px !important;
@@ -806,23 +806,23 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     display: none !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
     flex-basis: 390px !important;
     min-height: 390px !important;
   }
 
   html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-    .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child {
+    .dream-home > .dream-home-content > div:first-child > div:first-child {
     height: 235px !important;
     min-height: 235px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
     padding: 24px 30px !important;
   }
 
   html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-    .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:nth-child(2) {
+    .dream-home > .dream-home-content > div:first-child > div:first-child > div:nth-child(2) {
     inset-inline: 0 !important;
     top: 100% !important;
     bottom: auto !important;
@@ -845,18 +845,18 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     background-image: linear-gradient(rgba(241, 250, 255, .80), rgba(241, 250, 255, .80)), var(--dream-art) !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child::before,
-  html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child::before {
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before,
+  html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before {
     background: rgba(239, 249, 255, .72) !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child,
-  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child,
+  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
     justify-content: center !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child > div:first-child,
-  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child > div:first-child,
+  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child > div:first-child {
     width: min(90%, 440px) !important;
     align-items: center !important;
     text-align: center !important;
@@ -872,11 +872,11 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     display: none !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content {
     padding-top: 10px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > :is(.dream-home-content, div:first-child:not(:has(.home-banners))) > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
     flex-basis: 380px !important;
     min-height: 380px !important;
   }

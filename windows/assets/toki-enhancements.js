@@ -24,6 +24,26 @@
   let channel = null;
   let activityTimer = null;
   let scheduled = false;
+  let scheduledTimer = null;
+  let decorationsActive = false;
+  const metrics = {
+    ensureCalls: 0,
+    mutationBatches: 0,
+    relevantMutations: 0,
+    ignoredMutations: 0,
+  };
+  const RELEVANT_SELECTOR = [
+    "aside.app-shell-left-panel",
+    '[role="main"]',
+    '[data-testid="home-icon"]',
+    ".composer-surface-chrome",
+    ".group\\/home-suggestions",
+    "[data-home-ambient-suggestions]",
+    "[data-app-action-sidebar-project-row]",
+    "[data-settings-panel-slug]",
+    'input[name="appearance-theme"]',
+    '[data-testid="theme-preview"]',
+  ].join(",");
 
   const setOriginalText = (node, text, className) => {
     if (!(node instanceof HTMLElement)) return;
@@ -35,6 +55,7 @@
   };
 
   const removeDecorations = () => {
+    if (!decorationsActive) return;
     const root = document.documentElement;
     root?.classList.remove(...ROOT_CLASSES);
     for (const name of ["--dream-art", "--dream-art-position", "--dream-accent", "--dream-accent-ink"]) {
@@ -46,7 +67,8 @@
       node.removeAttribute("data-dream-toki-original-text");
       node.classList.remove("dream-toki-brand-name", "dream-toki-brand-mark");
     });
-    document.querySelectorAll(".dream-home").forEach((node) => node.classList.remove("dream-home"));
+    document.querySelectorAll(".dream-home, .dream-has-utility, .dream-has-fallback-cards").forEach((node) =>
+      node.classList.remove("dream-home", "dream-has-utility", "dream-has-fallback-cards"));
     document.querySelectorAll(".dream-home-content").forEach((node) => node.classList.remove("dream-home-content"));
     document.querySelectorAll(".dream-task").forEach((node) => node.classList.remove("dream-task"));
     document.querySelectorAll(".dream-home-shell").forEach((node) => node.classList.remove("dream-home-shell"));
@@ -62,6 +84,7 @@
       delete node.dataset.dreamTokiCardIndex;
     });
     document.querySelectorAll(".dream-toki-composer-wrap").forEach((node) => node.classList.remove("dream-toki-composer-wrap"));
+    decorationsActive = false;
   };
 
   const seedPrompt = (home, prompt) => {
@@ -116,11 +139,7 @@
 
   const decorateSidebar = (sidebar) => {
     sidebar.classList.add("dream-toki-sidebar");
-    const sidebarBox = sidebar.getBoundingClientRect();
-    const brand = Array.from(sidebar.querySelectorAll('button[aria-haspopup="menu"]')).find((button) => {
-      const box = button.getBoundingClientRect();
-      return box.top >= sidebarBox.top && box.top < sidebarBox.top + 100;
-    });
+    const brand = sidebar.querySelector('.dream-toki-brand-button, button[aria-haspopup="menu"]');
     if (brand instanceof HTMLElement) {
       brand.classList.add("dream-toki-brand-button");
       const labels = brand.querySelectorAll("span");
@@ -163,7 +182,12 @@
   };
 
   const ensure = () => {
+    if (scheduledTimer) {
+      clearTimeout(scheduledTimer);
+      scheduledTimer = null;
+    }
     scheduled = false;
+    metrics.ensureCalls += 1;
     const currentCore = window[CORE_STATE_KEY];
     if (!currentCore || !/^preset-toki(?:-|$)/i.test(String(currentCore.themeId || "")) ||
         window.__CODEX_DREAM_SKIN_DISABLED__) {
@@ -176,7 +200,7 @@
       return;
     }
     const root = document.documentElement;
-    const home = document.querySelector('[role="main"]:has([data-testid="home-icon"])');
+    const home = document.querySelector('[data-testid="home-icon"]')?.closest('[role="main"]') || null;
     const sidebar = document.querySelector("aside.app-shell-left-panel");
     const shellMain = document.querySelector('main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"])') || home?.closest("main");
     if (!root || !sidebar || !shellMain) return;
@@ -186,6 +210,7 @@
     root.style.setProperty("--dream-art-position", "var(--dream-skin-art-position, 72% 45%)");
     root.style.setProperty("--dream-accent", "#45bddd");
     root.style.setProperty("--dream-accent-ink", "#ffffff");
+    decorationsActive = true;
     shellMain.classList.toggle("dream-home-shell", Boolean(home));
     document.querySelectorAll('[role="main"]').forEach((node) => {
       node.classList.toggle("dream-home", node === home);
@@ -194,6 +219,7 @@
     const homeContent = home ? Array.from(home.children).find((candidate) =>
       candidate.querySelector?.('[data-testid="home-icon"]') && candidate.querySelector?.(".composer-surface-chrome")) : null;
     homeContent?.classList.add("dream-home-content");
+    home?.classList.toggle("dream-has-utility", Boolean(home.querySelector(".dream-home-utility")));
     decorateSidebar(sidebar);
     const cards = home ? Array.from(new Set(home.querySelectorAll('.group\\/home-suggestions button, [data-home-ambient-suggestions] button'))).slice(0, 4) : [];
     cards.forEach((card, index) => {
@@ -201,6 +227,7 @@
       card.dataset.dreamTokiCardIndex = String(index + 1);
     });
     ensureFallbackCards(home, cards.length);
+    home?.classList.toggle("dream-has-fallback-cards", Boolean(document.getElementById("dream-toki-fallback-cards")));
     const composer = home?.querySelector(".composer-surface-chrome");
     let wrapper = composer?.parentElement;
     while (wrapper && wrapper !== home) {
@@ -216,7 +243,18 @@
   const scheduleEnsure = () => {
     if (scheduled) return;
     scheduled = true;
-    setTimeout(ensure, 0);
+    scheduledTimer = setTimeout(() => {
+      scheduledTimer = null;
+      ensure();
+    }, 60);
+  };
+
+  const mutationTouchesSkin = (record) => {
+    for (const node of [...record.addedNodes, ...record.removedNodes]) {
+      if (!(node instanceof Element)) continue;
+      if (node.matches(RELEVANT_SELECTOR) || node.querySelector(RELEVANT_SELECTOR)) return true;
+    }
+    return false;
   };
 
   const collectRunningTasks = () => {
@@ -241,6 +279,7 @@
 
   const cleanup = () => {
     observer?.disconnect();
+    if (scheduledTimer) clearTimeout(scheduledTimer);
     if (timer) clearInterval(timer);
     if (activityTimer) clearInterval(activityTimer);
     channel?.close?.();
@@ -253,11 +292,19 @@
     channel = new BroadcastChannel(ACTIVITY_CHANNEL);
     activityTimer = setInterval(publishActivity, 2000);
   }
-  observer = new MutationObserver(scheduleEnsure);
-  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "disabled"] });
-  timer = setInterval(() => { if (document.visibilityState === "visible") ensure(); }, 15000);
-  window[STATE_KEY] = { cleanup, ensure, collectRunningTasks, publishActivity, version: "1.5.11-toki.1" };
+  observer = new MutationObserver((records) => {
+    metrics.mutationBatches += 1;
+    if (records.some(mutationTouchesSkin)) {
+      metrics.relevantMutations += 1;
+      scheduleEnsure();
+    } else {
+      metrics.ignoredMutations += 1;
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  timer = setInterval(() => { if (document.visibilityState === "visible") ensure(); }, 30000);
+  window[STATE_KEY] = { cleanup, ensure, collectRunningTasks, publishActivity, metrics, version: "1.5.11-toki.2" };
   ensure();
   publishActivity();
-  return { installed: true, version: "1.5.11-toki.1" };
+  return { installed: true, version: "1.5.11-toki.2" };
 })()

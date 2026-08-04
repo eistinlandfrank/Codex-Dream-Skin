@@ -58,3 +58,17 @@ test("the clickable task badge is not suppressed by the native badge", async () 
   assert.match(source, /if \(!signalFresh \|\| count <= 0\)/);
   assert.doesNotMatch(source, /if \(!signalFresh \|\| count <= 0 \|\| nativeActivityVisible\(\)\)/);
 });
+
+test("Toki resize path avoids full-tree relational matching and layout reads", async () => {
+  const [css, enhancer] = await Promise.all([
+    fs.readFile(path.join(assets, "toki-skin.css"), "utf8"),
+    fs.readFile(path.join(assets, "toki-enhancements.js"), "utf8"),
+  ]);
+  const relationalSelectors = css.match(/:has\(/g) || [];
+  assert.ok(relationalSelectors.length <= 4, `expected at most 4 :has() selectors, found ${relationalSelectors.length}`);
+  assert.doesNotMatch(css, /div:first-child:not\(:has\(\.home-banners\)\)/);
+  assert.doesNotMatch(enhancer, /getBoundingClientRect/);
+  assert.doesNotMatch(enhancer, /attributeFilter/);
+  assert.match(enhancer, /mutationTouchesSkin/);
+  assert.match(enhancer, /ignoredMutations/);
+});
