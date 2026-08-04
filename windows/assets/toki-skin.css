@@ -261,6 +261,15 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) m
   text-shadow: none !important;
 }
 
+/* Keep task headers native: the canonical skin otherwise adds a generated
+   "theme name · CODEX DREAM SKIN" ribbon above the task content. */
+html.codex-dream-skin.dream-skin-toki
+  main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"]):not(:has([role="main"]))
+  > header:is(.app-header-tint, [data-app-shell-header-edge-scroll], [class*="_Header_"])::before {
+  content: none !important;
+  display: none !important;
+}
+
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface [role="main"],
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface .app-shell-main-content-frame,
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface .thread-scroll-container {
