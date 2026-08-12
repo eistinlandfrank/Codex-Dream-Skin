@@ -71,4 +71,6 @@ test("Toki resize path avoids full-tree relational matching and layout reads", a
   assert.doesNotMatch(enhancer, /attributeFilter/);
   assert.match(enhancer, /mutationTouchesSkin/);
   assert.match(enhancer, /ignoredMutations/);
+  assert.match(enhancer, /contenteditable=\"true\".*role=\"textbox\"/);
+  assert.match(enhancer, /findHomeComposer/);
 });

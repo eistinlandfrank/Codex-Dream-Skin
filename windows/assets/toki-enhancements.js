@@ -37,6 +37,7 @@
     '[role="main"]',
     '[data-testid="home-icon"]',
     ".composer-surface-chrome",
+    '[contenteditable="true"][role="textbox"]',
     ".group\\/home-suggestions",
     "[data-home-ambient-suggestions]",
     "[data-app-action-sidebar-project-row]",
@@ -181,6 +182,10 @@
     shellMain.appendChild(figure);
   };
 
+  const findHomeComposer = (home) => home?.querySelector(
+    '.composer-surface-chrome, [contenteditable="true"][role="textbox"]',
+  ) || null;
+
   const ensure = () => {
     if (scheduledTimer) {
       clearTimeout(scheduledTimer);
@@ -216,8 +221,9 @@
       node.classList.toggle("dream-home", node === home);
       node.classList.toggle("dream-task", node !== home);
     });
+    const composer = findHomeComposer(home);
     const homeContent = home ? Array.from(home.children).find((candidate) =>
-      candidate.querySelector?.('[data-testid="home-icon"]') && candidate.querySelector?.(".composer-surface-chrome")) : null;
+      candidate.querySelector?.('[data-testid="home-icon"]') && findHomeComposer(candidate)) : null;
     homeContent?.classList.add("dream-home-content");
     home?.classList.toggle("dream-has-utility", Boolean(home.querySelector(".dream-home-utility")));
     decorateSidebar(sidebar);
@@ -228,7 +234,6 @@
     });
     ensureFallbackCards(home, cards.length);
     home?.classList.toggle("dream-has-fallback-cards", Boolean(document.getElementById("dream-toki-fallback-cards")));
-    const composer = home?.querySelector(".composer-surface-chrome");
     let wrapper = composer?.parentElement;
     while (wrapper && wrapper !== home) {
       if (String(wrapper.className).includes("max-w-(--thread-content-max-width)")) {
@@ -303,8 +308,8 @@
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   timer = setInterval(() => { if (document.visibilityState === "visible") ensure(); }, 30000);
-  window[STATE_KEY] = { cleanup, ensure, collectRunningTasks, publishActivity, metrics, version: "1.5.11-toki.2" };
+  window[STATE_KEY] = { cleanup, ensure, collectRunningTasks, publishActivity, metrics, version: "1.5.11-toki.3" };
   ensure();
   publishActivity();
-  return { installed: true, version: "1.5.11-toki.2" };
+  return { installed: true, version: "1.5.11-toki.3" };
 })()
