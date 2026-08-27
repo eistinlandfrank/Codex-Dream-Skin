@@ -815,6 +815,9 @@ try {
   $tokiInstallerSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\install-toki-dream-skin.ps1')
   if ([regex]::IsMatch($tokiInstallerSource, '[^\x00-\x7f]') -or
     -not $tokiInstallerSource.Contains('\uff08\u98de\u9e1f\u9a6c\u65f6\uff09') -or
+    -not $tokiInstallerSource.Contains('\u65e7\u7248\uff08app.asar \u56de\u9000\uff09') -or
+    -not $tokiInstallerSource.Contains('Test-DreamSkinPathWithin -Path $existing.TargetPath -Root $legacyPortableRoot') -or
+    -not $tokiInstallerSource.Contains('$launchArguments') -or
     -not $tokiInstallerSource.Contains('-WindowStyle Minimized') -or
     $tokiInstallerSource.Contains('-WindowStyle Hidden')) {
     throw 'The Toki shortcut installer is not Windows PowerShell 5.1 encoding-safe or uses a blocked hidden shortcut.'

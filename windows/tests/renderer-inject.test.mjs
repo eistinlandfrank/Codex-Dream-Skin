@@ -30,6 +30,7 @@ function createFixture({
   osAppearance = "light",
   analysisFixture = null,
   runningTaskTitles = [],
+  latestShell = false,
 }) {
   const nodes = new Map();
   const rootClasses = new Set(staleSkin ? ["codex-dream-skin"] : []);
@@ -92,8 +93,32 @@ function createFixture({
       nodes.set(node.id, node);
     },
   };
+  const makeCompatNode = (initialClasses = []) => {
+    const classes = new Set(initialClasses);
+    const attributes = new Map();
+    return {
+      classList: makeClassList(classes),
+      getAttribute(name) { return attributes.get(name) ?? null; },
+      setAttribute(name, value) { attributes.set(name, String(value)); },
+      removeAttribute(name) { attributes.delete(name); },
+      hasAttribute(name) { return attributes.has(name); },
+      classes,
+      attributes,
+    };
+  };
+  const header = makeCompatNode();
+  const frame = makeCompatNode();
+  const topFade = makeCompatNode();
+  const composer = makeCompatNode();
   const shellMain = {
-    classList: makeClassList(),
+    ...makeCompatNode(latestShell ? [] : ["main-surface"]),
+    querySelector(selector) {
+      if (!latestShell) return null;
+      if (selector === '[data-app-shell-application-menu-bar="true"]') return header;
+      if (selector === "[data-app-shell-thread-edge-divider]") return frame;
+      if (selector === "[data-app-shell-main-content-top-fade]") return topFade;
+      return null;
+    },
     getBoundingClientRect() {
       return { left: 290, top: 36, width: 990, height: 784 };
     },
@@ -105,6 +130,7 @@ function createFixture({
     classList: makeClassList(routeClasses),
     querySelectorAll(selector) {
       if (selector === '[class*="_homeUtilityBar_"]' && utilityPresent) return [utilityNode];
+      if (selector === '[data-composer-home-utility-bar-position]' && utilityPresent) return [utilityNode];
       return [];
     },
   };
@@ -161,7 +187,12 @@ function createFixture({
     createElement,
     getElementById(id) { return nodes.get(id) ?? null; },
     querySelector(selector) {
-      if (selector === "main.main-surface") return hasShell ? shellMain : null;
+      if (selector === "main.main-surface") {
+        return hasShell && shellMain.classList.contains("main-surface") ? shellMain : null;
+      }
+      if (selector === "main[data-app-shell-main-surface]") {
+        return hasShell && latestShell ? shellMain : null;
+      }
       if (selector === "aside.app-shell-left-panel") return hasShell ? {} : null;
       if (selector === '[role="main"]:has([data-testid="home-icon"])') {
         return hasShell && homePresent ? routeMain : null;
@@ -169,6 +200,13 @@ function createFixture({
       return null;
     },
     querySelectorAll(selector) {
+      if (selector === '[data-composer-layout][data-composer-radius-variant]') {
+        return hasShell && latestShell ? [composer] : [];
+      }
+      if (selector === '[data-dream-skin-compat-classes]') {
+        return [shellMain, header, frame, topFade, composer]
+          .filter((node) => node.hasAttribute("data-dream-skin-compat-classes"));
+      }
       if (selector === "aside.app-shell-left-panel .animate-spin") return runningSpinners;
       if (selector === 'button[aria-label]') return [];
       if (selector === '[role="main"]') return hasShell ? [routeMain] : [];
@@ -250,6 +288,11 @@ function createFixture({
     utilityClasses,
     activityMessages,
     activityChannels,
+    shellMainClasses: shellMain.classes,
+    headerClasses: header.classes,
+    frameClasses: frame.classes,
+    topFadeClasses: topFade.classes,
+    composerClasses: composer.classes,
     setShellPresent(value) { hasShell = value; },
   };
 }
@@ -286,6 +329,27 @@ assert.equal(main.rootClasses.has("dream-theme-dark"), false);
 assert.equal(main.nodes.has("codex-dream-skin-style"), false);
 assert.equal(main.nodes.has("codex-dream-skin-chrome"), false);
 assert.deepEqual(main.revokedUrls, ["blob:fixture-1"]);
+
+const latest = createFixture({
+  shellPresent: true,
+  homePresent: true,
+  utilityPresent: true,
+  latestShell: true,
+});
+vm.runInNewContext(payload, latest.context);
+assert.equal(latest.rootClasses.has("codex-dream-skin"), true);
+assert.equal(latest.shellMainClasses.has("main-surface"), true);
+assert.equal(latest.headerClasses.has("app-header-tint"), true);
+assert.equal(latest.frameClasses.has("app-shell-main-content-frame"), true);
+assert.equal(latest.topFadeClasses.has("app-shell-main-content-top-fade"), true);
+assert.equal(latest.composerClasses.has("composer-surface-chrome"), true);
+assert.equal(latest.utilityClasses.has("dream-home-utility"), true);
+assert.equal(latest.context.window.__CODEX_DREAM_SKIN_STATE__.cleanup(), true);
+assert.equal(latest.shellMainClasses.has("main-surface"), false);
+assert.equal(latest.headerClasses.has("app-header-tint"), false);
+assert.equal(latest.frameClasses.has("app-shell-main-content-frame"), false);
+assert.equal(latest.topFadeClasses.has("app-shell-main-content-top-fade"), false);
+assert.equal(latest.composerClasses.has("composer-surface-chrome"), false);
 
 const reinjected = createFixture({ shellPresent: true });
 vm.runInNewContext(payload, reinjected.context);

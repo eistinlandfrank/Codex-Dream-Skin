@@ -17,7 +17,8 @@ function Set-TokiDreamSkinShortcut {
     [Parameter(Mandatory = $true)][string]$TargetPath,
     [Parameter(Mandatory = $true)][string]$Arguments,
     [Parameter(Mandatory = $true)][string]$WorkingDirectory,
-    [Parameter(Mandatory = $true)][string]$Description
+    [Parameter(Mandatory = $true)][string]$Description,
+    [string]$IconLocation
   )
 
   $folder = [System.IO.Path]::GetDirectoryName([System.IO.Path]::GetFullPath($Path))
@@ -29,6 +30,7 @@ function Set-TokiDreamSkinShortcut {
     $shortcut.Arguments = $Arguments
     $shortcut.WorkingDirectory = $WorkingDirectory
     $shortcut.Description = $Description
+    if ($IconLocation) { $shortcut.IconLocation = "$IconLocation,0" }
     $shortcut.Save()
     if (-not (Test-Path -LiteralPath $temporaryPath -PathType Leaf)) {
       throw "Toki shortcut could not be created: $Path"
@@ -75,6 +77,7 @@ if (-not $NoShortcuts) {
     $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
     $desktop = [Environment]::GetFolderPath('Desktop')
     $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+    $taskbarPins = Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'
     $portArgument = if ($PortExplicit) { " -Port $Port" } else { '' }
     $shortcutFolders = @($desktop, $startMenu)
     # Keep this script ASCII-safe for Windows PowerShell 5.1, which treats a
@@ -83,28 +86,108 @@ if (-not $NoShortcuts) {
     $mainShortcutFile = '"Toki Codex\uff08\u98de\u9e1f\u9a6c\u65f6\uff09.lnk"' | ConvertFrom-Json
     $trayShortcutFile = '"Toki Codex - \u4e3b\u9898\u63a7\u5236.lnk"' | ConvertFrom-Json
     $restoreShortcutFile = '"Toki Codex - \u6062\u590d\u5b98\u65b9\u5916\u89c2.lnk"' | ConvertFrom-Json
+    $legacyShortcutFile = '"Toki Codex \u65e7\u7248\uff08app.asar \u56de\u9000\uff09.lnk"' | ConvertFrom-Json
+    $legacyPortableRoot = Join-Path $env:LOCALAPPDATA 'Programs\TokiCodex'
+    $launchArguments = "-NoProfile -ExecutionPolicy RemoteSigned -File `"$($engine.Start)`"$portArgument -PromptRestart"
+    $launchDescription = 'Launch the newest registered Microsoft Store Codex with the external Toki theme engine'
+
+    # Preserve the native Codex icon in a stable managed path. Store updates
+    # retire their WindowsApps directories, but this copied icon remains valid.
+    $iconPath = Join-Path $engine.Root 'codex.ico'
+    $temporaryIconPath = Join-Path $engine.Root ('.codex-icon-' + [guid]::NewGuid().ToString('N') + '.ico')
+    try {
+      Add-Type -AssemblyName System.Drawing
+      $currentCodex = Get-DreamSkinCodexInstall
+      $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($currentCodex.Executable)
+      if ($null -ne $icon) {
+        try {
+          $stream = [System.IO.File]::Open($temporaryIconPath, [System.IO.FileMode]::CreateNew)
+          try { $icon.Save($stream) } finally { $stream.Dispose() }
+          Move-Item -LiteralPath $temporaryIconPath -Destination $iconPath -Force
+        } finally {
+          $icon.Dispose()
+        }
+      }
+    } catch {
+      Write-Warning "Could not refresh the managed Codex shortcut icon: $($_.Exception.Message)"
+    } finally {
+      Remove-Item -LiteralPath $temporaryIconPath -Force -ErrorAction SilentlyContinue
+    }
+    $shortcutIcon = if (Test-Path -LiteralPath $iconPath -PathType Leaf) { $iconPath } else { $null }
 
     foreach ($folder in $shortcutFolders) {
+      # Migrate shortcuts from the retired app.asar package. The managed start
+      # script resolves the registered Store package on every launch, so an
+      # automatic Codex update does not make these shortcuts stale.
+      foreach ($candidate in @(Get-ChildItem -LiteralPath $folder -Filter '*.lnk' -File -ErrorAction SilentlyContinue)) {
+        $existing = $shell.CreateShortcut($candidate.FullName)
+        $legacyTarget = -not [string]::IsNullOrWhiteSpace($existing.TargetPath) -and
+          (Test-DreamSkinPathWithin -Path $existing.TargetPath -Root $legacyPortableRoot)
+        $legacyArguments = -not [string]::IsNullOrWhiteSpace($existing.Arguments) -and
+          $existing.Arguments.IndexOf($legacyPortableRoot, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+        if (-not $legacyTarget -and -not $legacyArguments) { continue }
+        if ([string]::Equals($candidate.Name, $legacyShortcutFile, [System.StringComparison]::OrdinalIgnoreCase)) {
+          Remove-Item -LiteralPath $candidate.FullName -Force
+          continue
+        }
+        Set-TokiDreamSkinShortcut -Shell $shell `
+          -Path $candidate.FullName `
+          -TargetPath $powershell `
+          -Arguments $launchArguments `
+          -WorkingDirectory $engine.Root `
+          -Description $launchDescription `
+          -IconLocation $shortcutIcon
+      }
+      Remove-Item -LiteralPath (Join-Path $folder $legacyShortcutFile) -Force -ErrorAction SilentlyContinue
+
       Set-TokiDreamSkinShortcut -Shell $shell `
         -Path (Join-Path $folder $mainShortcutFile) `
         -TargetPath $powershell `
-        -Arguments "-NoProfile -ExecutionPolicy RemoteSigned -File `"$($engine.Start)`"$portArgument -PromptRestart" `
+        -Arguments $launchArguments `
         -WorkingDirectory $engine.Root `
-        -Description 'Launch the official Microsoft Store Codex with the external Toki theme engine'
+        -Description $launchDescription `
+        -IconLocation $shortcutIcon
 
       Set-TokiDreamSkinShortcut -Shell $shell `
         -Path (Join-Path $folder $trayShortcutFile) `
         -TargetPath $powershell `
         -Arguments "-NoProfile -STA -WindowStyle Minimized -ExecutionPolicy RemoteSigned -File `"$($engine.Tray)`"$portArgument" `
         -WorkingDirectory $engine.Root `
-        -Description 'Open the Toki Codex theme control tray'
+        -Description 'Open the Toki Codex theme control tray' `
+        -IconLocation $shortcutIcon
 
       Set-TokiDreamSkinShortcut -Shell $shell `
         -Path (Join-Path $folder $restoreShortcutFile) `
         -TargetPath $powershell `
         -Arguments "-NoProfile -ExecutionPolicy RemoteSigned -File `"$($engine.Restore)`"$portArgument -PromptRestart" `
         -WorkingDirectory $engine.Root `
-        -Description 'Remove the external Toki skin without rewriting the shared Codex config'
+        -Description 'Remove the external Toki skin without rewriting the shared Codex config' `
+        -IconLocation $shortcutIcon
+    }
+
+    # Repair an already pinned shortcut too. Windows does not always store a
+    # taskbar pin as a .lnk, so this is intentionally best-effort.
+    if (Test-Path -LiteralPath $taskbarPins -PathType Container) {
+      foreach ($candidate in @(Get-ChildItem -LiteralPath $taskbarPins -Filter '*.lnk' -File -ErrorAction SilentlyContinue)) {
+        try {
+          $existing = $shell.CreateShortcut($candidate.FullName)
+          $legacyTarget = -not [string]::IsNullOrWhiteSpace($existing.TargetPath) -and
+            (Test-DreamSkinPathWithin -Path $existing.TargetPath -Root $legacyPortableRoot)
+          $legacyArguments = -not [string]::IsNullOrWhiteSpace($existing.Arguments) -and
+            $existing.Arguments.IndexOf($legacyPortableRoot, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+          if ($legacyTarget -or $legacyArguments) {
+            Set-TokiDreamSkinShortcut -Shell $shell `
+              -Path $candidate.FullName `
+              -TargetPath $powershell `
+              -Arguments $launchArguments `
+              -WorkingDirectory $engine.Root `
+              -Description $launchDescription `
+              -IconLocation $shortcutIcon
+          }
+        } catch {
+          Write-Warning "Could not inspect or repair pinned shortcut $($candidate.FullName): $($_.Exception.Message)"
+        }
+      }
     }
   } finally {
     Exit-DreamSkinOperationLock -Mutex $operationLock

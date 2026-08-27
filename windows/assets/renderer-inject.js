@@ -38,12 +38,16 @@
   const TOKI_SETTINGS_ROW_ID = "dream-toki-settings-row";
   const TOKI_POLAROID_ID = "dream-toki-polaroid";
   const TOKI_ORIGINAL_TEXT = "data-dream-toki-original-text";
+  const COMPAT_MARKER = "data-dream-skin-compat-classes";
   const TOKI_RELEVANT_SELECTOR = [
     "main.main-surface",
+    "main[data-app-shell-main-surface]",
     "aside.app-shell-left-panel",
     '[role="main"]',
     '[data-testid="home-icon"]',
     ".composer-surface-chrome",
+    "[data-codex-composer-root]",
+    "[data-composer-layout][data-composer-radius-variant]",
     ".group\\/home-suggestions",
     "[data-home-ambient-suggestions]",
     `#${TOKI_FALLBACK_CARDS_ID}`,
@@ -531,12 +535,15 @@
 
   const decorateTokiComposer = (home) => {
     let liveWrapper = null;
-    const composer = home?.querySelector(".composer-surface-chrome");
+    const composer = home?.querySelector(
+      ".composer-surface-chrome, [data-composer-layout][data-composer-radius-variant]"
+    );
     if (composer instanceof HTMLElement) {
-      let wrapper = composer.parentElement;
+      const composerRoot = composer.closest?.("[data-codex-composer-root]");
+      let wrapper = composerRoot instanceof HTMLElement ? composerRoot : composer.parentElement;
       while (wrapper && wrapper !== home) {
         const className = typeof wrapper.className === "string" ? wrapper.className : "";
-        if (className.includes("max-w-(--thread-content-max-width)")) {
+        if (wrapper === composerRoot || className.includes("max-w-(--thread-content-max-width)")) {
           liveWrapper = wrapper;
           break;
         }
@@ -615,6 +622,41 @@
       node.classList.remove(TOKI_COMPOSER_WRAP_CLASS));
   };
 
+  const addCompatibilityClass = (node, className) => {
+    if (!node?.classList?.contains || node.classList.contains(className)) return;
+    node.classList.add(className);
+    const previous = (node.getAttribute?.(COMPAT_MARKER) || "").split(" ").filter(Boolean);
+    if (!previous.includes(className)) previous.push(className);
+    node.setAttribute?.(COMPAT_MARKER, previous.join(" "));
+  };
+
+  const ensureCompatibilityClasses = (shellMain) => {
+    addCompatibilityClass(shellMain, "main-surface");
+    addCompatibilityClass(
+      shellMain.querySelector?.('[data-app-shell-application-menu-bar="true"]'),
+      "app-header-tint",
+    );
+    addCompatibilityClass(
+      shellMain.querySelector?.("[data-app-shell-thread-edge-divider]"),
+      "app-shell-main-content-frame",
+    );
+    addCompatibilityClass(
+      shellMain.querySelector?.("[data-app-shell-main-content-top-fade]"),
+      "app-shell-main-content-top-fade",
+    );
+    document.querySelectorAll('[data-composer-layout][data-composer-radius-variant]')
+      .forEach((node) => addCompatibilityClass(node, "composer-surface-chrome"));
+  };
+
+  const clearCompatibilityClasses = () => {
+    document.querySelectorAll(`[${COMPAT_MARKER}]`).forEach((node) => {
+      for (const className of (node.getAttribute(COMPAT_MARKER) || "").split(" ").filter(Boolean)) {
+        node.classList.remove(className);
+      }
+      node.removeAttribute(COMPAT_MARKER);
+    });
+  };
+
   const ensureTokiDom = (root, shellMain, sidebar, home) => {
     const enabled = config.variant === "toki";
     root.classList.toggle("dream-skin-toki", enabled);
@@ -640,6 +682,7 @@
     document.querySelectorAll(".dream-task").forEach((node) => node.classList.remove("dream-task"));
     document.querySelectorAll(".dream-home-shell").forEach((node) => node.classList.remove("dream-home-shell"));
     document.querySelectorAll(`.${HOME_UTILITY_CLASS}`).forEach((node) => node.classList.remove(HOME_UTILITY_CLASS));
+    clearCompatibilityClasses();
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(CHROME_ID)?.remove();
   };
@@ -698,12 +741,15 @@
     const root = document.documentElement;
     if (!root || !document.body) return;
 
-    const shellMain = document.querySelector("main.main-surface");
+    const shellMain = document.querySelector("main.main-surface") ||
+      document.querySelector("main[data-app-shell-main-surface]");
     const shellSidebar = document.querySelector("aside.app-shell-left-panel");
     if (!shellMain || !shellSidebar) {
       clearSkinDom();
       return;
     }
+
+    ensureCompatibilityClasses(shellMain);
 
     root.classList.add("codex-dream-skin");
     applyProfile(root);
@@ -724,7 +770,10 @@
       candidate.classList.toggle("dream-home", candidate === home);
       candidate.classList.toggle("dream-task", candidate !== home);
     }
-    const utilityBars = new Set(home ? home.querySelectorAll('[class*="_homeUtilityBar_"]') : []);
+    const utilityBars = new Set(home ? [
+      ...home.querySelectorAll('[class*="_homeUtilityBar_"]'),
+      ...home.querySelectorAll('[data-composer-home-utility-bar-position]'),
+    ] : []);
     for (const candidate of document.querySelectorAll(`.${HOME_UTILITY_CLASS}`)) {
       if (!utilityBars.has(candidate)) candidate.classList.remove(HOME_UTILITY_CLASS);
     }

@@ -19,7 +19,7 @@ function createFixture() {
   const observers = [];
   const timers = new Map();
   let nextTimer = 1;
-  const markers = { shell: false, sidebar: false };
+  const markers = { shell: false, latestShell: false, sidebar: false };
   const context = {
     window: { installs: [] },
     document: {
@@ -27,6 +27,7 @@ function createFixture() {
       body: {},
       querySelector(selector) {
         if (selector === "main.main-surface") return markers.shell ? {} : null;
+        if (selector === "main[data-app-shell-main-surface]") return markers.latestShell ? {} : null;
         if (selector === "aside.app-shell-left-panel") return markers.sidebar ? {} : null;
         return null;
       },
@@ -72,6 +73,14 @@ assert.deepEqual(
   "A stale early script must yield to the newest watcher generation.",
 );
 assert.equal(generations.context.window.__CODEX_DREAM_SKIN_EARLY_APPLIED__, "new");
+
+const latestShell = createFixture();
+vm.runInNewContext(earlyPayloadFor('window.installs.push("latest")', "latest"), latestShell.context);
+latestShell.markers.latestShell = true;
+latestShell.markers.sidebar = true;
+latestShell.observers[0].callback([]);
+assert.deepEqual(latestShell.context.window.installs, ["latest"],
+  "The guarded payload should recognize the current data-attribute shell marker.");
 
 const registrationStart = source.indexOf("earlyScriptId = await registerEarlyPayload");
 const evaluateStart = source.indexOf("await session.evaluate(earlyPayloadFor", registrationStart);

@@ -318,7 +318,12 @@ function Invoke-DreamSkinNative {
 function Get-DreamSkinNodeRuntime {
   param([int]$MinimumMajor = 22)
 
-  $command = Get-Command node.exe -ErrorAction SilentlyContinue
+  $bundledRuntime = Join-Path $PSScriptRoot 'node.exe'
+  $command = if (Test-Path -LiteralPath $bundledRuntime -PathType Leaf) {
+    Get-Command -Name $bundledRuntime -ErrorAction Stop
+  } else {
+    Get-Command node.exe -ErrorAction SilentlyContinue
+  }
   if (-not $command) { $command = Get-Command node -ErrorAction SilentlyContinue }
   if (-not $command) { throw "Node.js $MinimumMajor or newer is required and was not found in PATH." }
   $versionProbe = Invoke-DreamSkinNative -FilePath $command.Source -ArgumentList @('-p', 'process.versions.node') -DiscardStderr
@@ -773,11 +778,19 @@ function Stop-DreamSkinRecordedInjector {
   }
 
   Stop-Process -Id $processId -Force -ErrorAction Stop
-  try { Wait-Process -Id $processId -Timeout 5 -ErrorAction Stop } catch {}
-  if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-    throw "The recorded Dream Skin injector did not stop: PID $processId"
+  # A Windows process can remain queryable for a short time after its handles
+  # have begun closing. Poll the exact recorded identity so a normal shutdown
+  # does not make the first shortcut launch fail and require a second click.
+  for ($attempt = 0; $attempt -lt 40; $attempt += 1) {
+    $remaining = Get-Process -Id $processId -ErrorAction SilentlyContinue
+    if (-not $remaining) { return $true }
+    $remainingStartedAt = Get-DreamSkinProcessStartedAt -ProcessId $processId
+    if ($startedAt -and $remainingStartedAt -and $remainingStartedAt -ne $startedAt) {
+      return $true
+    }
+    Start-Sleep -Milliseconds 250
   }
-  return $true
+  throw "The recorded Dream Skin injector did not stop: PID $processId"
 }
 
 function Get-DreamSkinCodexProcesses {

@@ -455,9 +455,9 @@ async function readThemeSourceStamp(loadedTheme) {
 async function probeSession(session) {
   return session.evaluate(`(() => {
     const markers = {
-      shell: Boolean(document.querySelector('main.main-surface')),
+      shell: Boolean(document.querySelector('main.main-surface, main[data-app-shell-main-surface]')),
       sidebar: Boolean(document.querySelector('aside.app-shell-left-panel')),
-      composer: Boolean(document.querySelector('.composer-surface-chrome')),
+      composer: Boolean(document.querySelector('.composer-surface-chrome, [data-codex-composer-root], [data-codex-composer]')),
       main: Boolean(document.querySelector('[role="main"]')),
     };
     return {
@@ -538,7 +538,8 @@ export function earlyPayloadFor(payload, revision) {
       if (window[generationKey] !== generation) { stop(); return true; }
       const root = document.documentElement;
       if (!root || !document.body) return false;
-      const shell = document.querySelector('main.main-surface');
+      const shell = document.querySelector('main.main-surface') ||
+        document.querySelector('main[data-app-shell-main-surface]');
       const sidebar = document.querySelector('aside.app-shell-left-panel');
       if (!shell || !sidebar) return false;
       stop();
@@ -627,6 +628,12 @@ async function removeFromSession(session) {
     });
     document.getElementById('codex-dream-skin-style')?.remove();
     document.getElementById('codex-dream-skin-chrome')?.remove();
+    document.querySelectorAll('[data-dream-skin-compat-classes]').forEach((node) => {
+      for (const className of (node.getAttribute('data-dream-skin-compat-classes') || '').split(' ').filter(Boolean)) {
+        node.classList.remove(className);
+      }
+      node.removeAttribute('data-dream-skin-compat-classes');
+    });
     delete window.__CODEX_DREAM_SKIN_STATE__;
     return true;
   })()`);
@@ -642,6 +649,7 @@ async function verifyRemovedSession(session) {
     !document.querySelector('.dream-home-utility') &&
     !document.querySelector('.dream-toki-sidebar') &&
     !document.querySelector('.dream-toki-card') &&
+    !document.querySelector('[data-dream-skin-compat-classes]') &&
     !document.getElementById('dream-toki-fallback-cards') &&
     !document.getElementById('dream-toki-settings-row') &&
     !document.getElementById('dream-toki-polaroid') &&
@@ -675,7 +683,7 @@ async function verifySession(session) {
       suggestionsPresent: Boolean(suggestions),
       hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
       cards,
-      composer: box(document.querySelector('.composer-surface-chrome')),
+      composer: box(document.querySelector('.composer-surface-chrome, [data-codex-composer-root], [data-codex-composer]')),
       sidebar: box(document.querySelector('aside.app-shell-left-panel')),
       viewport: { width: innerWidth, height: innerHeight },
       documentOverflow: {
