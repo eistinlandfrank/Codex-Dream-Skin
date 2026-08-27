@@ -818,6 +818,8 @@ try {
     -not $tokiInstallerSource.Contains('\u65e7\u7248\uff08app.asar \u56de\u9000\uff09') -or
     -not $tokiInstallerSource.Contains('Test-DreamSkinPathWithin -Path $existing.TargetPath -Root $legacyPortableRoot') -or
     -not $tokiInstallerSource.Contains('$launchArguments') -or
+    -not $tokiInstallerSource.Contains("Join-Path `$StateRoot 'codex.ico'") -or
+    -not $tokiInstallerSource.Contains('Keep the desktop clean') -or
     -not $tokiInstallerSource.Contains('-WindowStyle Minimized') -or
     $tokiInstallerSource.Contains('-WindowStyle Hidden')) {
     throw 'The Toki shortcut installer is not Windows PowerShell 5.1 encoding-safe or uses a blocked hidden shortcut.'
@@ -829,6 +831,18 @@ try {
     [ref]$tokiInstallerParseErrors
   ) | Out-Null
   if (@($tokiInstallerParseErrors).Count -gt 0) { throw 'The Toki shortcut installer has a PowerShell parse error.' }
+  $repairShortcutScript = Join-Path $Root 'scripts\repair-toki-shortcuts.ps1'
+  $repairShortcutSource = Read-DreamSkinUtf8File -Path $repairShortcutScript
+  if ([regex]::IsMatch($repairShortcutSource, '[^\x00-\x7f]') -or
+    -not $repairShortcutSource.Contains("Join-Path `$StateRoot 'codex.ico'") -or
+    -not $repairShortcutSource.Contains('Only the primary launch shortcut belongs on the desktop.')) {
+    throw 'The Toki shortcut repair script is not encoding-safe or does not keep its icon outside the replaceable engine.'
+  }
+  $repairShortcutParseErrors = $null
+  [System.Management.Automation.Language.Parser]::ParseFile(
+    $repairShortcutScript, [ref]$null, [ref]$repairShortcutParseErrors
+  ) | Out-Null
+  if (@($repairShortcutParseErrors).Count -gt 0) { throw 'The Toki shortcut repair script has a PowerShell parse error.' }
   $traySource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\tray-dream-skin.ps1')
   foreach ($requiredTrayAction in @('System.Windows.Forms.NotifyIcon', '暂停皮肤', '更换背景图', '已保存主题', '完全恢复 Codex')) {
     if (-not $traySource.Contains($requiredTrayAction)) { throw "Tray action is missing: $requiredTrayAction" }

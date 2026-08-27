@@ -93,8 +93,8 @@ if (-not $NoShortcuts) {
 
     # Preserve the native Codex icon in a stable managed path. Store updates
     # retire their WindowsApps directories, but this copied icon remains valid.
-    $iconPath = Join-Path $engine.Root 'codex.ico'
-    $temporaryIconPath = Join-Path $engine.Root ('.codex-icon-' + [guid]::NewGuid().ToString('N') + '.ico')
+    $iconPath = Join-Path $StateRoot 'codex.ico'
+    $temporaryIconPath = Join-Path $StateRoot ('.codex-icon-' + [guid]::NewGuid().ToString('N') + '.ico')
     try {
       Add-Type -AssemblyName System.Drawing
       $currentCodex = Get-DreamSkinCodexInstall
@@ -147,6 +147,14 @@ if (-not $NoShortcuts) {
         -WorkingDirectory $engine.Root `
         -Description $launchDescription `
         -IconLocation $shortcutIcon
+
+      if (-not (Test-DreamSkinPathEqual -Left $folder -Right $startMenu)) {
+        # Keep the desktop clean: launch Toki from the single main shortcut.
+        # Theme controls and restore remain available from the Start menu.
+        Remove-Item -LiteralPath (Join-Path $folder $trayShortcutFile) -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath (Join-Path $folder $restoreShortcutFile) -Force -ErrorAction SilentlyContinue
+        continue
+      }
 
       Set-TokiDreamSkinShortcut -Shell $shell `
         -Path (Join-Path $folder $trayShortcutFile) `
