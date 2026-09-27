@@ -460,21 +460,16 @@ export async function runRendererRuntimeTest(assetRoot) {
     /\[data-markdown-table="true"\][\s\S]{0,220}margin-inline:\s*0\s*!important/,
     "Markdown wide tables must remain aligned with the themed message body.",
   );
-  assert.match(
-    css,
-    /\[data-response-annotation-conversation\]\[data-response-annotation-target\][\s\S]{0,900}backdrop-filter:\s*blur\(20px\)/,
-    "Streaming reasoning needs a readable single themed surface.",
-  );
-  assert.match(
-    css,
-    /\[data-local-conversation-final-assistant\][\s\S]{0,160}\[data-response-annotation-conversation\]\[data-response-annotation-target\][\s\S]{0,260}background:\s*transparent\s*!important/,
-    "Final assistant messages must not retain a nested reasoning surface.",
-  );
-  assert.match(
-    css,
-    /\[data-local-conversation-item-target-ids\][\s\S]{0,900}backdrop-filter:\s*blur\(18px\)/,
-    "Expanded command details need a readable themed surface.",
-  );
+  for (const selector of [
+    "[data-response-annotation-conversation][data-response-annotation-target]",
+    "[data-local-conversation-item-target-ids]",
+  ]) {
+    const rule = css.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1];
+    assert.ok(rule, `${selector} must retain a readable text color`);
+    assert.match(rule, /color:\s*(?:var\(--ds-text\)|rgb\(var\(--ds-text-rgb\))/, `${selector} must keep dark text`);
+    assert.doesNotMatch(rule, /(?:background|border|box-shadow|backdrop-filter|padding|margin)(?:-[a-z]+)*\s*:/,
+      `${selector} must not draw a separate rounded box`);
+  }
   assert.match(
     css,
     /button\[class~="bg-primary-solid"\][\s\S]{0,520}color:\s*var\(--ds-on-accent\)\s*!important/,

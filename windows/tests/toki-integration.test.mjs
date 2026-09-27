@@ -98,3 +98,13 @@ test("Toki targets the stable Codex 26.924 shell and composer attributes", async
   assert.match(css, /\.dream-toki-transcript/);
   assert.match(css, /\.dream-toki-modern-card/);
 });
+
+test("the narrow sidebar Help trigger uses a complete compact mark", async () => {
+  const [css, enhancer] = await Promise.all([
+    fs.readFile(path.join(assets, "toki-skin.css"), "utf8"),
+    fs.readFile(path.join(assets, "toki-enhancements.js"), "utf8"),
+  ]);
+  assert.match(enhancer, /isHelpRailButton\s*\?\s*"\?"\s*:\s*"Toki Codex"/);
+  assert.match(css, /nav\[class~="group\/sidebar-rail"\] \.dream-toki-brand-button\s*\{[^}]*width:\s*36px\s*!important;/);
+  assert.match(css, /nav\[class~="group\/sidebar-rail"\] \.dream-toki-brand-name\s*\{[^}]*place-items:\s*center\s*!important;/);
+});

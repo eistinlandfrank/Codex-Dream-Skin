@@ -174,8 +174,10 @@
     if (brand instanceof HTMLElement) {
       brand.classList.add("dream-toki-brand-button");
       const labels = brand.querySelectorAll("span");
-      setOriginalText(labels[0], "Toki Codex", "dream-toki-brand-name");
-      if (labels[1]) setOriginalText(labels[1], "· 04", "dream-toki-brand-mark");
+      const isHelpRailButton = brand.closest('nav[class~="group/sidebar-rail"]') &&
+        brand.getAttribute("aria-haspopup") === "menu";
+      setOriginalText(labels[0], isHelpRailButton ? "?" : "Toki Codex", "dream-toki-brand-name");
+      if (labels[1] && !isHelpRailButton) setOriginalText(labels[1], "· 04", "dream-toki-brand-mark");
     }
     Array.from(sidebar.querySelectorAll("[data-app-action-sidebar-project-row]")).forEach((row, index) => {
       row.classList.add("dream-toki-project-row");

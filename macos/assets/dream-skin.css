@@ -1264,50 +1264,16 @@ html[data-dream-skin="active"] [data-markdown-text-style]
   overflow-y: hidden !important;
 }
 
-/* Streaming reasoning is not yet inside the final assistant message. Give it
-   one readable surface, then remove the nested decoration after finalization. */
+/* Keep live assistant text readable without boxing each update. */
 html[data-dream-skin="active"] .thread-scroll-container
   [data-response-annotation-conversation][data-response-annotation-target] {
-  box-sizing: border-box;
-  margin-block: 4px 10px !important;
-  padding: 14px 16px !important;
-  border: 1px solid rgb(var(--ds-muted-rgb) / .18) !important;
-  border-radius: 18px !important;
-  background:
-    linear-gradient(135deg, rgb(var(--ds-text-rgb) / .08), transparent 42%),
-    rgb(var(--ds-panel-rgb) / .46) !important;
   color: var(--ds-text) !important;
-  box-shadow:
-    0 10px 28px rgb(var(--ds-bg-rgb) / .18),
-    inset 0 1px rgb(var(--ds-text-rgb) / .14) !important;
-  backdrop-filter: blur(20px) saturate(125%) brightness(104%) !important;
 }
 
-html[data-dream-skin="active"] .thread-scroll-container
-  [data-local-conversation-final-assistant]
-  [data-response-annotation-conversation][data-response-annotation-target] {
-  margin: 0 !important;
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-
-/* Expanded command details are tool-result nodes rather than messages. */
+/* Tool progress keeps Codex's native spacing instead of a second card. */
 html[data-dream-skin="active"] .thread-scroll-container
   [data-local-conversation-item-target-ids] {
-  box-sizing: border-box;
-  padding: 10px 12px !important;
-  border: 1px solid rgb(var(--ds-muted-rgb) / .16) !important;
-  border-radius: 14px !important;
-  background:
-    linear-gradient(135deg, rgb(var(--ds-text-rgb) / .06), transparent 46%),
-    rgb(var(--ds-panel-rgb) / .52) !important;
   color: rgb(var(--ds-text-rgb) / .94) !important;
-  box-shadow:
-    0 8px 22px rgb(var(--ds-bg-rgb) / .16),
-    inset 0 1px rgb(var(--ds-text-rgb) / .12) !important;
-  backdrop-filter: blur(18px) saturate(120%) brightness(102%) !important;
 }
 
 html[data-dream-skin="active"] .thread-scroll-container
