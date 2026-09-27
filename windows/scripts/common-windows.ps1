@@ -1316,7 +1316,18 @@ function Stop-DreamSkinRecordedInjector {
     if ($processHandle.HasExited) { return $true }
     throw "The recorded injector PID $processId is running, but its start time cannot be inspected. State was preserved."
   }
-  $startMatches = -not $State.injectorStartedAt -or $startedAt -eq "$($State.injectorStartedAt)"
+  $startMatches = -not $State.injectorStartedAt
+  if (-not $startMatches) {
+    try {
+      # ConvertFrom-Json may deserialize the ISO timestamp as DateTime. String
+      # interpolation would then discard fractional seconds in some cultures.
+      $expectedStart = [DateTimeOffset]$State.injectorStartedAt
+      $startMatches = $processHandle.StartTime.ToUniversalTime().Ticks -eq
+        $expectedStart.UtcDateTime.Ticks
+    } catch {
+      $startMatches = $false
+    }
+  }
   $identityMatches = [bool]($isNodeExecutable -and $nodeMatches -and $injectorMatches -and $startMatches)
 
   if (-not $identityMatches) {

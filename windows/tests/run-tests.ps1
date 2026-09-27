@@ -1290,6 +1290,11 @@ try {
   )) {
     if (-not $css.Contains($requiredCss)) { throw "Windows immersive CSS is missing: $requiredCss" }
   }
+  $topFadeRule = [regex]::Match($css,
+    '(?s):is\(\.app-shell-main-content-top-fade, \[data-app-shell-main-content-top-fade\], \[class\*="_MainContentTopFade_"\]\)\s*\{([^}]*)\}')
+  if (-not $topFadeRule.Success -or $topFadeRule.Groups[1].Value -match '\bdisplay\s*:') {
+    throw 'The top-fade data attribute must not hide the entire conversation layout.'
+  }
   if ($css.Contains('home-suggestion-list-item') -or
     $css.Contains('.dream-skin-home') -or $css.Contains('.dream-home') -or
     $css.Contains('.dream-task') -or $css.Contains('codex-dream-skin-chrome')) {
@@ -1591,6 +1596,7 @@ try {
       port = $recordedInjectorPort
       browserId = $recordedInjectorBrowserId
     }
+    $recordedInjectorState = $recordedInjectorState | ConvertTo-Json | ConvertFrom-Json
     if (-not (Stop-DreamSkinRecordedInjector -State $recordedInjectorState)) {
       throw 'The identity-validated recorded injector did not report a successful stop.'
     }

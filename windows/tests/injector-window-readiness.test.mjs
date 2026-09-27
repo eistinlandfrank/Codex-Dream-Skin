@@ -12,7 +12,8 @@ const startPath = path.resolve(here, "../scripts/start-dream-skin.ps1");
 const selectors = {
   shell: 'main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"])',
   sidebar: "aside.app-shell-left-panel",
-  composer: ".composer-surface-chrome",
+  composer: ':is(.composer-surface-chrome, [class*="_ComposerLayoutRoot_"], [data-composer-surface-variant][data-composer-radius-variant])',
+  threadSurface: ".thread-scroll-container",
   homeIcon: '[data-testid="home-icon"]',
   home: '[role="main"]:has([data-testid="home-icon"])',
   gameSource: '[data-feature="game-source"]',
@@ -85,6 +86,7 @@ function makeDomFixture({
   shell = makeElement(),
   sidebar = makeElement(),
   composer = makeElement(),
+  threadSurface = null,
   home = null,
   homeSignal = null,
   genericMain = null,
@@ -114,6 +116,7 @@ function makeDomFixture({
       if (selector === selectors.shell) return shell;
       if (selector === selectors.sidebar) return sidebar;
       if (selector === selectors.composer) return composer;
+      if (selector === selectors.threadSurface) return threadSurface;
       if (selector === selectors.homeIcon) return null;
       if (selector === selectors.home) return home;
       if (selector === selectors.gameSource || selector === selectors.suggestions) return homeSignal;
@@ -192,6 +195,7 @@ test("normal L1 renderer requires and records the exact target window binding", 
     documentPass: true,
     viewportPass: true,
     structurePass: true,
+    conversationPass: true,
     nativeWindowPass: true,
     fallbackWindowPass: false,
   });
@@ -199,6 +203,27 @@ test("normal L1 renderer requires and records the exact target window binding", 
     { method: "Browser.getWindowForTarget", params: { targetId: "page-main" } },
     { method: "Browser.getWindowBounds", params: { windowId: 41 } },
   ]);
+});
+
+test("thread verification rejects a collapsed transcript or composer despite a visible shell", async () => {
+  const collapsedThread = await verify({
+    dom: makeDomFixture({
+      threadSurface: makeElement({ rect: makeRect(0, 0) }),
+      composer: makeElement({ rect: makeRect(0, 0) }),
+    }),
+  });
+  assert.equal(collapsedThread.result.readiness.structurePass, true);
+  assert.equal(collapsedThread.result.readiness.conversationPass, false);
+  assert.equal(collapsedThread.result.pass, false);
+
+  const visibleThread = await verify({
+    dom: makeDomFixture({
+      threadSurface: makeElement({ rect: makeRect(900, 620, 300, 80) }),
+      composer: makeElement({ rect: makeRect(660, 100, 420, 600) }),
+    }),
+  });
+  assert.equal(visibleThread.result.readiness.conversationPass, true);
+  assert.equal(visibleThread.result.pass, true);
 });
 
 test("visible settings is the only L0 structure exception", async () => {

@@ -1352,8 +1352,15 @@ html[data-dream-skin="active"][data-dream-art-wide="true"] __DREAM_SELECTOR_SHEL
 
 html[data-dream-skin="active"][data-dream-art-wide="true"] __DREAM_SELECTOR_SHELL_MAIN__
   __DREAM_SELECTOR_MAIN_CONTENT_TOP_FADE__ {
-  display: none !important;
   background: transparent !important;
+}
+
+/* Newer Codex builds also put the top-fade data attribute on the entire
+   conversation layout. Only the dedicated fade classes are safe to hide;
+   hiding the attribute selector would remove the transcript and composer. */
+html[data-dream-skin="active"][data-dream-art-wide="true"] __DREAM_SELECTOR_SHELL_MAIN__
+  :is(.app-shell-main-content-top-fade, [class*="_MainContentTopFade_"]) {
+  display: none !important;
 }
 
 /* Codex paints a second opaque fade behind the sticky composer. The composer

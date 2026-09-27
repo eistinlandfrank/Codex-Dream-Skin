@@ -1339,6 +1339,7 @@ export async function verifySession(
       suggestionLabels,
       suggestionLabelColorsMatch,
       composer: box(document.querySelector(${selectorLiteral("composer-chrome")})),
+      threadSurface: box(document.querySelector(${selectorLiteral("thread-surface")})),
       shell: box(document.querySelector(${selectorLiteral("shell-main")})),
       sidebar: box(document.querySelector(${selectorLiteral("left-panel")})),
       genericMain: box(document.querySelector('[data-ds-part="main"], [data-ds-part="home"]')),
@@ -1361,6 +1362,11 @@ export async function verifySession(
       result.scope?.baseState === 'settings' && Boolean(result.settingsAnchor?.visible);
     const structurePass = l0StructurePass || (l1ScopePass &&
       (Boolean(result.shell?.visible && result.sidebar?.visible) || genericStructurePass));
+    // A visible shell is insufficient when a broad theme selector collapses
+    // the thread subtree. Check the transcript and input whenever this route
+    // actually renders a thread scroller.
+    const conversationPass = !result.threadSurface ||
+      (result.threadSurface.visible && Boolean(result.composer?.visible || result.genericInput?.visible));
     const documentPass = result.documentVisibility === 'visible' && !result.documentHidden;
     const viewportPass = result.viewport.width >= ${MIN_RENDERER_VIEWPORT_WIDTH} &&
       result.viewport.height >= ${MIN_RENDERER_VIEWPORT_HEIGHT};
@@ -1382,7 +1388,7 @@ export async function verifySession(
     result.expectedThemeId = expectedThemeId;
     result.expectedRevision = expectedRevision;
     result.readiness = {
-      windowPass, documentPass, viewportPass, structurePass,
+      windowPass, documentPass, viewportPass, structurePass, conversationPass,
       nativeWindowPass, fallbackWindowPass,
     };
     const homePass = !homeScope || (
@@ -1396,7 +1402,7 @@ export async function verifySession(
     );
     result.pass = result.installed && result.version === result.expectedVersion &&
       result.stylePresent && result.businessClassPollution === 0 && !result.documentOverflow.x &&
-      windowPass && documentPass && viewportPass && structurePass &&
+      windowPass && documentPass && viewportPass && structurePass && conversationPass &&
       payloadPass && homePass;
     return result;
   })()`);
