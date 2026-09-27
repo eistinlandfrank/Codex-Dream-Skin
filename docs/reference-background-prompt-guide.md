@@ -6,9 +6,9 @@
 
 English guide: [`reference-background-prompt-guide.en.md`](./reference-background-prompt-guide.en.md)
 
-## 当前实测精选置顶：桥本有菜
+## 当前源码参考：桥本有菜（不随公开安装包提供）
 
-- **实际可切换主题**：`macos/presets/preset-arina-hashimoto/`；该「桥本有菜」预设现在只由 macOS 播种。Windows 发行包只内置 `windows/assets/theme.json` 与 `toki-reference.png` 组成的 Toki 兔女郎预设。
+- **源码中的可切换参考主题**：`macos/presets/preset-arina-hashimoto/`；源码 Windows 运行时使用 `windows/assets/theme.json` 与 byte-identical 的 `windows/assets/dream-reference.jpg`。公开 DMG 和 Setup.exe 不包含这套素材，公开包只播种已确认可分发的 Gothic Void Crusade。
 - **用户提供的纯背景源图**：`docs/images/presets/arina-hashimoto-source.png`（`1672 × 941`）；preset 中的 `2560 × 1440` JPEG 是标准化发行副本，不会凭空增加源图细节。
 - **真实运行效果**：`arina-hashimoto-light.jpg` 与 `arina-hashimoto-dark.jpg` 是浅色/暗色实机截图，只用于预览，不能导入为背景。
 - **与历史示例的关系**：它是当前实际预设，不是 `docs/images/gallery/skin-01.jpg`，也不是 skin-01～08 的概念效果图。skin-01 只提供相近的粉色玫瑰视觉方向和 UI 文案参考。
@@ -21,7 +21,7 @@ README 里的“效果图”不等于可以导入的背景。下面这些文件�
 
 | 类型 | 仓库路径 | 作用 | 能否直接作为完整主题导入 |
 |---|---|---|---|
-| **实际可切换预设（当前置顶）** | `macos/presets/preset-arina-hashimoto/` | 「桥本有菜」只由 macOS 播种；Windows 的唯一内置预设是独立的 Toki 主题 | **可以** |
+| **源码参考预设（非公开包）** | `macos/presets/preset-arina-hashimoto/`；源码 Windows 播种源为 `windows/assets/theme.json` + byte-identical 的 `dream-reference.jpg` | 仅在本地源码且完成权利核验后使用；公开 DMG/Setup.exe 改用 Gothic Void Crusade | **仅限获权的本地源码场景** |
 | **纯背景源图** | `docs/images/presets/arina-hashimoto-source.png` | 用户提供的原始纯背景，约 `1672 × 941`；只有图片，没有 `theme.json` | **不能作为完整主题**；可手动换图，但应先检查比例和裁切 |
 | **真实实机效果预览** | `docs/images/presets/arina-hashimoto-light.jpg`、`arina-hashimoto-dark.jpg` | 浅色/暗色 Codex 注入截图，包含真实侧栏、卡片和输入框 | **不可以** |
 | **概念效果图** | `docs/images/gallery/skin-01.jpg` ～ `skin-08.jpg` | 只表达八种视觉方向的带 UI 示例；配套的 `background-generation-prompts.md` 按这些方向拆解 | **不可以** |
@@ -29,7 +29,7 @@ README 里的“效果图”不等于可以导入的背景。下面这些文件�
 
 `docs/images/hero-banner-red-white.png` 与 `macos/assets/portal-hero.png` 是旧的 3:1 横幅资源，不是当前 16:9 通用主题母版；除非明确只做首页横幅，否则不要拿它们替代 `preset-*/background.jpg`。
 
-一句话判断：**要切换主题看 `macos/presets/preset-*`；要生成新图看本指南；要看视觉方向看 `docs/images/gallery/`；要看真实运行结果看 `docs/images/presets/*-light.jpg` / `*-dark.jpg`。** `theme.json` 和 `background.jpg` 同在一个 `preset-*` 目录时才是一套可播种的主题；`docs/images/` 是文档/归档目录，不是主题库的镜像。
+一句话判断：**公开安装包的默认主题是 Gothic Void Crusade；源码中的参考主题仅在完成权利核验后本地切换。** 要生成新图看本指南；要看视觉方向看 `docs/images/gallery/`；要看真实运行结果看 `docs/images/presets/*-light.jpg` / `*-dark.jpg`。`theme.json` 和 `background.jpg` 同在一个 `preset-*` 目录时才是一套可播种的主题；`docs/images/` 是文档/归档目录，不是主题库的镜像。
 
 路径分类不代表肖像或再分发许可。当前 `preset-arina-hashimoto` 含维护者指示收录的用户提供真人/AI 肖像素材；仓库公开包含这些文件并不授予或证明肖像、生成、商业使用或再次分发权利，具体边界以 `macos/NOTICE.md` 为准。
 

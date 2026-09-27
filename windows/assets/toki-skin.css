@@ -1,4 +1,4 @@
-/* Toki preset for Dream Skin 1.2.0.
+/* Toki preset for Dream Skin 1.5.18.
    Every rule is gated by .dream-skin-toki so the upstream presets keep their
    native appearance.  The preset intentionally avoids animation, blur and a
    fixed background to keep Chromium repaint work predictable. */
@@ -30,6 +30,49 @@ html.codex-dream-skin.dream-skin-toki {
   --dream-task-immersive-edge: rgba(243, 250, 255, .90);
   --dream-task-immersive-mid: rgba(243, 250, 255, .79);
   --dream-task-immersive-far: rgba(243, 250, 255, .66);
+  /* Codex keeps electron-dark on the document even when this light preset is
+     active. Rebind its native typography tokens at the preset root so every
+     route inherits Toki's dark ink instead of the host theme's white text. */
+  --color-token-foreground: var(--dream-text);
+  --color-token-text-primary: var(--dream-text);
+  --color-token-conversation-body: var(--dream-text);
+  --color-token-text-secondary: #496b88;
+  --color-token-text-tertiary: #6b849b;
+  --color-token-muted-foreground: var(--dream-text-muted);
+  --color-token-description-foreground: #496b88;
+  --color-token-input-foreground: var(--dream-text);
+  --color-token-input-placeholder-foreground: var(--dream-text-muted);
+  --color-token-text-link-foreground: #247fa7;
+  /* Codex 26.924 moved the shell, composer and conversation onto the shared
+     semantic token set. Keep both generations mapped so Electron's retained
+     dark class cannot turn text or controls white on this light preset. */
+  --color-text-primary: var(--dream-text);
+  --color-text-prose: var(--dream-text);
+  --color-text-emphasis: #102f4f;
+  --color-text-secondary: #496b88;
+  --color-text-tertiary: #6b849b;
+  --color-text-composer-primary: var(--dream-text);
+  --color-text-composer-reference: #247fa7;
+  --color-text-composer-file-reference: #247fa7;
+  --color-text-user-message: var(--dream-text);
+  --color-background-composer-primary: rgba(252, 254, 255, .96);
+  --color-background-composer-action-bar: rgba(241, 250, 255, .92);
+  --color-background-user-message: rgba(227, 246, 255, .88);
+  --color-background-user-message-compact: rgba(227, 246, 255, .88);
+  --color-background-panel: rgba(247, 252, 255, .97);
+  --color-border-subtle: rgba(77, 177, 217, .24);
+  --color-border-strong: rgba(77, 177, 217, .42);
+  --app-color-text-foreground: var(--dream-text);
+  --app-color-text-foreground-secondary: #496b88;
+  --app-color-text-foreground-tertiary: #6b849b;
+  --app-color-icon-primary: var(--dream-text);
+  --app-color-icon-secondary: #496b88;
+  --app-color-icon-tertiary: #6b849b;
+  --app-color-background-surface: rgba(244, 251, 255, .90);
+  --app-color-background-card: rgba(255, 255, 255, .91);
+  --app-color-background-control: rgba(238, 248, 255, .94);
+  --app-color-border: rgba(77, 177, 217, .29);
+  --app-color-border-light: rgba(77, 177, 217, .19);
   --toki-cyan: #47c4e1;
   --toki-blue: #6f91ed;
   --toki-violet: #b879e5;
@@ -43,6 +86,7 @@ html.codex-dream-skin.dream-skin-toki {
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface > header.app-header-tint,
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) [class~="group/application-menu-top-bar"],
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .composer-surface-chrome,
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-toki-composer,
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home .group\/home-suggestions button,
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home [data-home-ambient-suggestions] button {
   backdrop-filter: none !important;
@@ -59,6 +103,15 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) b
   background-size: cover, cover !important;
   background-repeat: no-repeat, no-repeat !important;
   background-attachment: scroll, scroll !important;
+}
+
+/* Some navigation utilities redeclare this token below the document root.
+   Keep low-emphasis labels readable on Toki's pale surfaces as well. */
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) body
+  .text-token-muted-foreground {
+  --color-token-foreground: var(--dream-text) !important;
+  --color-token-input-placeholder-foreground: var(--dream-text-muted) !important;
+  color: var(--dream-text-muted) !important;
 }
 
 /* Sidebar identity ------------------------------------------------------- */
@@ -239,6 +292,15 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) m
   text-shadow: none !important;
 }
 
+/* Keep task headers native: the canonical skin otherwise adds a generated
+   "theme name · CODEX DREAM SKIN" ribbon above the task content. */
+html.codex-dream-skin.dream-skin-toki
+  main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"]):not(.dream-home-shell)
+  > header:is(.app-header-tint, [data-app-shell-header-edge-scroll], [class*="_Header_"])::before {
+  content: none !important;
+  display: none !important;
+}
+
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface [role="main"],
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface .app-shell-main-content-frame,
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) main.main-surface .thread-scroll-container {
@@ -253,17 +315,17 @@ html.codex-dream-skin.dream-skin-toki .dream-home {
   background: transparent !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child {
+html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content {
   min-height: 100% !important;
   padding-top: 18px !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child {
+html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
   flex: 0 0 var(--toki-hero-height) !important;
   min-height: var(--toki-hero-height) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child {
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child {
   width: calc(100% - 48px) !important;
   max-width: 1210px !important;
   height: var(--toki-hero-height) !important;
@@ -286,22 +348,22 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .
   box-shadow: 0 14px 34px rgba(39, 120, 168, .13), inset 0 0 0 1px rgba(255, 255, 255, .55) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child::before {
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before {
   content: "" !important;
   background: linear-gradient(90deg, rgba(239, 249, 255, .88) 0 25%, rgba(239, 249, 255, .34) 53%, transparent 72%) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child::before {
+html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before {
   content: "" !important;
   background: linear-gradient(270deg, rgba(239, 249, 255, .88) 0 25%, rgba(239, 249, 255, .34) 53%, transparent 72%) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
+html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
   padding: 32px 42px 194px !important;
 }
 
 html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-  .dream-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+  .dream-home > .dream-home-content > div:first-child > div:first-child > div:nth-child(2) {
   inset-inline: 18px !important;
   top: auto !important;
   bottom: 18px !important;
@@ -335,7 +397,7 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .
   justify-content: center !important;
   padding: 18px 15px 21px !important;
   overflow: hidden !important;
-  color: #20496f !important;
+  color: #1e2124 !important;
   text-align: center !important;
   border: 1px solid rgba(99, 179, 218, .29) !important;
   border-radius: 18px !important;
@@ -349,7 +411,7 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .
 
 html.codex-dream-skin.dream-skin-toki .dream-toki-card:disabled,
 html.codex-dream-skin.dream-skin-toki .dream-toki-card[aria-disabled="true"] {
-  color: #20496f !important;
+  color: #1e2124 !important;
   cursor: pointer !important;
   opacity: 1 !important;
   filter: none !important;
@@ -373,7 +435,7 @@ html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .
 }
 
 html.codex-dream-skin.dream-skin-toki .dream-toki-card:hover {
-  color: #153f66 !important;
+  color: #1e2124 !important;
   border-color: rgba(70, 180, 218, .55) !important;
   box-shadow: 0 10px 24px rgba(42, 119, 166, .14), inset 0 0 0 1px rgba(255, 255, 255, .75) !important;
   transform: none !important;
@@ -465,7 +527,7 @@ html.codex-dream-skin.dream-skin-toki .dream-home-utility {
   background: rgba(247, 252, 255, .97) !important;
 }
 
-html.codex-dream-skin.dream-skin-toki .dream-home:has(.dream-home-utility) .composer-surface-chrome {
+html.codex-dream-skin.dream-skin-toki .dream-home.dream-has-utility .composer-surface-chrome {
   border-top: 0 !important;
 }
 
@@ -505,6 +567,119 @@ html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell) .
 html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell) article,
 html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell) [data-message-author-role] {
   color: var(--dream-text) !important;
+}
+
+/* Codex can keep its native electron-dark class while this preset explicitly
+   renders a light shell.  Rebind conversation tokens inside the task scroller
+   so native Markdown utilities do not paint white text over the light wash. */
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell) > header.app-header-tint,
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell) .thread-scroll-container {
+  --color-token-foreground: var(--dream-text);
+  --color-token-text-primary: var(--dream-text);
+  --color-token-conversation-body: var(--dream-text);
+  --color-token-text-secondary: #496b88;
+  --color-token-text-tertiary: #6b849b;
+  --color-token-text-link-foreground: #247fa7;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container [class*="_markdownContent_"],
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container [class*="_markdownText_"] {
+  color: var(--dream-text) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container .text-token-text-secondary,
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container .text-token-text-tertiary,
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container .text-token-conversation-body {
+  color: #496b88 !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container a,
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  .thread-scroll-container [class*="_tableCellFileLink_"] {
+  color: #247fa7 !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  > header.app-header-tint .text-token-foreground {
+  color: var(--dream-text) !important;
+}
+
+/* Native dropdown and input tokens stay dark when the host shell retains its
+   electron-dark class.  Restore task-side floating surfaces to Toki's light
+   glass treatment without touching terminals or code-rendering surfaces. */
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background"] {
+  --color-token-foreground: var(--dream-text);
+  --color-token-text-primary: var(--dream-text);
+  --color-token-text-secondary: #496b88;
+  --color-token-text-tertiary: #6b849b;
+  --color-token-border: rgba(77, 177, 217, .27);
+  --color-token-border-default: rgba(77, 177, 217, .27);
+  color: var(--dream-text) !important;
+  background: rgba(250, 253, 255, .96) !important;
+  border-color: rgba(77, 177, 217, .27) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background"] .text-token-foreground {
+  color: var(--dream-text) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background"] .text-token-text-secondary,
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background"] .text-token-text-tertiary {
+  color: #6b849b !important;
+}
+
+/* Completed file-change cards use the half-opacity dropdown utility instead
+   of the normal dropdown class. Keep the whole Undo/Review surface in Toki's
+   pale glass palette, including its file glyph tile and review action. */
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background/50"]:has(> .group\/turn-diff-header) {
+  --color-token-dropdown-background: #edf8ff !important;
+  --color-token-bg-secondary: #def5ff !important;
+  --color-token-bg-fog: rgba(255, 255, 255, .76) !important;
+  --color-token-list-hover-background: rgba(77, 195, 222, .16) !important;
+  --color-token-border: rgba(77, 177, 217, .30) !important;
+  color: var(--dream-text) !important;
+  background: linear-gradient(105deg, rgba(247, 253, 255, .96), rgba(230, 245, 255, .92)) !important;
+  border: 1px solid rgba(77, 177, 217, .30) !important;
+  box-shadow: 0 7px 20px rgba(38, 113, 159, .10), inset 0 1px rgba(255, 255, 255, .78) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background/50"]:has(> .group\/turn-diff-header)
+  [class~="bg-token-bg-secondary"] {
+  color: #3489b2 !important;
+  background: linear-gradient(135deg, rgba(220, 248, 255, .98), rgba(228, 234, 255, .96)) !important;
+  border: 1px solid rgba(77, 177, 217, .27) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .68) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-dropdown-background/50"]:has(> .group\/turn-diff-header)
+  button[class~="bg-token-bg-fog"] {
+  color: #245b7f !important;
+  background: rgba(255, 255, 255, .76) !important;
+  border-color: rgba(77, 177, 217, .31) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
+  [class~="bg-token-input-background/70"] {
+  --color-token-foreground: var(--dream-text);
+  --color-token-text-secondary: #496b88;
+  --color-token-text-tertiary: #6b849b;
+  color: var(--dream-text) !important;
+  background: rgba(248, 252, 255, .88) !important;
+  border-color: rgba(77, 177, 217, .27) !important;
+  box-shadow: 0 7px 20px rgba(38, 113, 159, .12) !important;
 }
 
 html.codex-dream-skin.dream-skin-toki main.main-surface:not(.dream-home-shell)
@@ -600,12 +775,162 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
   white-space: nowrap !important;
 }
 
+/* Codex 26.924+ compatibility -------------------------------------------
+   These selectors target durable data attributes through renderer-added
+   marker classes. They intentionally leave hashed React class names alone. */
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+  .dream-toki-shell-main {
+  position: relative !important;
+  color: var(--dream-text) !important;
+  background: linear-gradient(90deg, rgba(242, 251, 255, .91), rgba(242, 251, 255, .69) 64%, rgba(242, 251, 255, .44)) !important;
+  border-color: rgba(91, 179, 218, .20) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .72) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+  .dream-toki-shell-main.dream-home-shell {
+  background-color: #edf8ff !important;
+  background-image:
+    linear-gradient(90deg, rgba(240, 250, 255, .94) 0 25%, rgba(240, 250, 255, .63) 54%, rgba(240, 250, 255, .26) 100%),
+    var(--dream-art) !important;
+  background-position: center, var(--dream-art-position) !important;
+  background-size: cover, cover !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-shell-main
+  :is([data-app-shell-main-content-layout], [data-app-shell-active-page], [data-request-input-activity-root], .thread-scroll-container) {
+  color: var(--dream-text) !important;
+  background-color: transparent !important;
+}
+
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+  .dream-toki-sidebar {
+  color: var(--dream-text) !important;
+  background: linear-gradient(180deg, rgba(247, 253, 255, .97), rgba(235, 248, 255, .94)) !important;
+  border-right-color: rgba(90, 180, 218, .24) !important;
+  box-shadow: inset -1px 0 rgba(255, 255, 255, .70) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-sidebar button {
+  color: var(--dream-text) !important;
+  transition: none !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-sidebar button:hover {
+  background-color: rgba(78, 196, 222, .14) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-route,
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-home {
+  color: var(--dream-text) !important;
+  background-color: transparent !important;
+}
+
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+  .dream-toki-composer {
+  --color-text-primary: var(--dream-text);
+  --color-text-secondary: #496b88;
+  --color-text-tertiary: #6b849b;
+  --color-text-composer-primary: var(--dream-text);
+  --color-background-composer-primary: rgba(252, 254, 255, .97);
+  --color-background-composer-action-bar: rgba(239, 249, 255, .94);
+  color: var(--dream-text) !important;
+  border: 1px solid rgba(77, 177, 217, .34) !important;
+  border-radius: 18px !important;
+  background: rgba(252, 254, 255, .97) !important;
+  box-shadow: 0 9px 24px rgba(38, 113, 159, .13) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-composer
+  :is([data-codex-composer], .ProseMirror, textarea, input) {
+  color: var(--dream-text) !important;
+  caret-color: var(--toki-cyan) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-composer
+  :is([data-codex-composer], .ProseMirror, textarea, input)::placeholder {
+  color: var(--dream-text-muted) !important;
+  opacity: 1 !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-transcript {
+  --color-text-primary: var(--dream-text);
+  --color-text-prose: var(--dream-text);
+  --color-text-emphasis: #102f4f;
+  --color-text-secondary: #496b88;
+  --color-text-tertiary: #6b849b;
+  --color-text-user-message: var(--dream-text);
+  --app-color-text-foreground: var(--dream-text);
+  --app-color-text-foreground-secondary: #496b88;
+  color: var(--dream-text) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-transcript
+  :is([class*="_markdownContent_"], [class*="_markdownText_"], [data-message-author-role]) {
+  color: var(--dream-text) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-transcript
+  :is(.text-secondary, .text-tertiary, [class~="text-token-text-secondary"], [class~="text-token-text-tertiary"]) {
+  color: #496b88 !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-transcript a {
+  color: #247fa7 !important;
+}
+
+html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
+  .dream-toki-modern-card {
+  min-height: 62px !important;
+  color: var(--dream-text) !important;
+  border: 1px solid rgba(99, 179, 218, .29) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 6px 18px rgba(42, 119, 166, .09), inset 0 0 0 1px rgba(255, 255, 255, .62) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: none !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-card-1 {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(218, 249, 255, .92)) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-card-2 {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(245, 226, 255, .92)) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-card-3 {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(229, 234, 255, .94)) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-card-4 {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(219, 250, 246, .93)) !important;
+}
+
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-card:hover {
+  color: var(--dream-text) !important;
+  border-color: rgba(70, 180, 218, .55) !important;
+  box-shadow: 0 8px 21px rgba(42, 119, 166, .13), inset 0 0 0 1px rgba(255, 255, 255, .75) !important;
+  transform: none !important;
+}
+
+/* The 26.924 home composer is anchored to the bottom of the scroll layout.
+   Lift the photo above it instead of shrinking or reflowing the composer. */
+html.codex-dream-skin.dream-skin-toki .dream-toki-modern-layout .dream-toki-polaroid {
+  bottom: 154px !important;
+}
+
 @media (max-width: 1180px) {
   html.codex-dream-skin.dream-skin-toki .dream-home {
     --thread-content-max-width: min(980px, calc(100cqw - 34px)) !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child {
     width: calc(100% - 34px) !important;
   }
 
@@ -615,26 +940,26 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
 }
 
 @media (max-width: 900px) {
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
     flex-basis: 390px !important;
     min-height: 390px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child {
     height: 225px !important;
     min-height: 225px !important;
     border-radius: 18px !important;
   }
 
   html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-    .dream-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+    .dream-home > .dream-home-content > div:first-child > div:first-child > div:nth-child(2) {
     inset-inline: 0 !important;
     top: 100% !important;
     bottom: auto !important;
     margin-top: 16px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
     padding: 23px 26px !important;
   }
 
@@ -644,7 +969,7 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     border-radius: 15px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home:has(.dream-toki-fallback-cards)
+  html.codex-dream-skin.dream-skin-toki .dream-home.dream-has-fallback-cards
     > div:first-child > div:first-child {
     flex-basis: 490px !important;
     min-height: 490px !important;
@@ -662,23 +987,23 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     display: none !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
     flex-basis: 390px !important;
     min-height: 390px !important;
   }
 
   html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-    .dream-home > div:first-child > div:first-child > div:first-child {
+    .dream-home > .dream-home-content > div:first-child > div:first-child {
     height: 235px !important;
     min-height: 235px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
     padding: 24px 30px !important;
   }
 
   html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor)
-    .dream-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+    .dream-home > .dream-home-content > div:first-child > div:first-child > div:nth-child(2) {
     inset-inline: 0 !important;
     top: 100% !important;
     bottom: auto !important;
@@ -701,18 +1026,18 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     background-image: linear-gradient(rgba(241, 250, 255, .80), rgba(241, 250, 255, .80)), var(--dream-art) !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child::before,
-  html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > div:first-child > div:first-child > div:first-child::before {
+  html.codex-dream-skin.dream-skin-toki:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before,
+  html.codex-dream-skin.dream-skin-toki.dream-safe-right:not(#dream-skin-toki-specificity-anchor) .dream-home > .dream-home-content > div:first-child > div:first-child::before {
     background: rgba(239, 249, 255, .72) !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child,
-  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > div:first-child > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child,
+  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child {
     justify-content: center !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child,
-  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child > div:first-child,
+  html.codex-dream-skin.dream-skin-toki.dream-safe-right .dream-home > .dream-home-content > div:first-child > div:first-child > div:first-child > div:first-child {
     width: min(90%, 440px) !important;
     align-items: center !important;
     text-align: center !important;
@@ -728,11 +1053,11 @@ html.codex-dream-skin.dream-skin-toki .dream-toki-polaroid figcaption span {
     display: none !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content {
     padding-top: 10px !important;
   }
 
-  html.codex-dream-skin.dream-skin-toki .dream-home > div:first-child > div:first-child {
+  html.codex-dream-skin.dream-skin-toki .dream-home > .dream-home-content > div:first-child {
     flex-basis: 380px !important;
     min-height: 380px !important;
   }

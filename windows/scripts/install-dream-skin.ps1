@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
   [int]$Port = 9335,
-  [switch]$NoShortcuts,
-  [switch]$SkipBaseTheme
+  [switch]$NoShortcuts
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,19 +40,10 @@ try {
   }
   $engine = Install-DreamSkinRuntimeEngine -SkillRoot $SkillRoot -StateRoot $StateRoot
   $null = Initialize-DreamSkinThemeStore -SkillRoot $engine.Root -StateRoot $StateRoot
-  $skipBaseThemeMarker = Join-Path $StateRoot 'skip-base-theme'
-  Assert-DreamSkinNoReparseComponents -Path $skipBaseThemeMarker
-  if ($SkipBaseTheme) {
-    Write-DreamSkinUtf8FileAtomically -Path $skipBaseThemeMarker `
-      -Content "Codex Dream Skin does not manage ~/.codex/config.toml for this installation.`r`n"
-  } else {
-    $ConfigPath = Join-Path $HOME '.codex\config.toml'
-    $BackupPath = Join-Path $StateRoot 'config.before-dream-skin.toml'
-    Install-DreamSkinBaseTheme -ConfigPath $ConfigPath -BackupPath $BackupPath
-    if (Test-Path -LiteralPath $skipBaseThemeMarker) {
-      Remove-Item -LiteralPath $skipBaseThemeMarker -Force -ErrorAction Stop
-    }
-  }
+  $ConfigPath = Join-Path $HOME '.codex\config.toml'
+  $BackupPath = Join-Path $StateRoot 'config.before-dream-skin.toml'
+  Install-DreamSkinBaseTheme -ConfigPath $ConfigPath -BackupPath $BackupPath `
+    -AppearanceTheme (Get-DreamSkinActiveThemeAppearance -ThemeDirectory $themePaths.Active)
 
   if (-not $NoShortcuts) {
     $shell = New-Object -ComObject WScript.Shell
@@ -64,7 +54,6 @@ try {
     $restoreScript = $engine.Restore
     $trayScript = $engine.Tray
     $portArgument = if ($PortExplicit) { " -Port $Port" } else { '' }
-    $restoreBaseThemeArgument = if ($SkipBaseTheme) { '' } else { ' -RestoreBaseTheme' }
 
     foreach ($folder in @($desktop, $startMenu)) {
       $shortcut = $shell.CreateShortcut((Join-Path $folder 'Codex Dream Skin.lnk'))
@@ -77,7 +66,7 @@ try {
 
     $restore = $shell.CreateShortcut((Join-Path $desktop 'Codex Dream Skin - Restore.lnk'))
     $restore.TargetPath = $powershell
-    $restore.Arguments = "-NoProfile -ExecutionPolicy RemoteSigned -File `"$restoreScript`"$portArgument$restoreBaseThemeArgument -PromptRestart"
+    $restore.Arguments = "-NoProfile -ExecutionPolicy RemoteSigned -File `"$restoreScript`"$portArgument -RestoreBaseTheme -PromptRestart"
     $restore.WorkingDirectory = $engine.Root
     $restore.Description = 'Restore the official Codex appearance and close the CDP session'
     $restore.Save()
@@ -96,8 +85,7 @@ try {
   }
 
   if ($NoShortcuts) {
-    $configMessage = if ($SkipBaseTheme) { 'Codex config was intentionally left unchanged.' } else { 'The Codex base theme was installed.' }
-    Write-Host "Codex Dream Skin installed at $($engine.Root). $configMessage Run $($engine.Start) to launch it."
+    Write-Host "Codex Dream Skin base theme installed at $($engine.Root). Run $($engine.Start) to launch it."
   } else {
     Write-Host 'Codex Dream Skin installed. The launch shortcut asks before restarting an open Codex window.'
   }
