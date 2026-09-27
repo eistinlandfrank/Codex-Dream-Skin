@@ -32,15 +32,34 @@
     relevantMutations: 0,
     ignoredMutations: 0,
   };
+  const SHELL_MAIN_SELECTOR = 'main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"])';
+  const SIDEBAR_SELECTOR = 'aside.app-shell-left-panel, aside[data-testid="app-shell-floating-left-panel"]';
+  const HOME_ANCHOR_SELECTOR = '[data-thread-scroll-footer].home-composer-anchor, .home-composer-anchor';
+  const TRANSCRIPT_SELECTOR = '[data-thread-user-message-navigation-content], .thread-scroll-container';
+  const EDITOR_SELECTOR = '[data-codex-composer], .ProseMirror[contenteditable="true"], [contenteditable="true"][role="textbox"]';
   const RELEVANT_SELECTOR = [
     "aside.app-shell-left-panel",
+    'aside[data-testid="app-shell-floating-left-panel"]',
+    '[data-app-shell-main-surface]',
+    '[data-app-shell-main-content-layout]',
+    '[data-app-shell-active-page]',
     '[role="main"]',
     '[data-testid="home-icon"]',
+    ".home-composer-anchor",
+    '[data-thread-scroll-footer]',
+    '[data-thread-user-message-navigation-content]',
+    '[data-request-input-activity-root]',
     ".composer-surface-chrome",
+    '[data-composer-layout]',
+    '[data-composer-body]',
+    '[data-codex-composer]',
     '[contenteditable="true"][role="textbox"]',
     ".group\\/home-suggestions",
     "[data-home-ambient-suggestions]",
+    "[data-home-suggestion-group]",
+    "[data-home-suggestion-id]",
     "[data-app-action-sidebar-project-row]",
+    "[data-app-action-sidebar-thread-id]",
     "[data-settings-panel-slug]",
     'input[name="appearance-theme"]',
     '[data-testid="theme-preview"]',
@@ -73,6 +92,12 @@
     document.querySelectorAll(".dream-home-content").forEach((node) => node.classList.remove("dream-home-content"));
     document.querySelectorAll(".dream-task").forEach((node) => node.classList.remove("dream-task"));
     document.querySelectorAll(".dream-home-shell").forEach((node) => node.classList.remove("dream-home-shell"));
+    document.querySelectorAll(".dream-toki-shell-main").forEach((node) =>
+      node.classList.remove("dream-toki-shell-main", "dream-toki-modern-layout"));
+    document.querySelectorAll(".dream-toki-route").forEach((node) => node.classList.remove("dream-toki-route"));
+    document.querySelectorAll(".dream-toki-modern-home").forEach((node) => node.classList.remove("dream-toki-modern-home"));
+    document.querySelectorAll(".dream-toki-composer").forEach((node) => node.classList.remove("dream-toki-composer"));
+    document.querySelectorAll(".dream-toki-transcript").forEach((node) => node.classList.remove("dream-toki-transcript"));
     document.querySelectorAll(".dream-toki-sidebar").forEach((node) => node.classList.remove("dream-toki-sidebar"));
     document.querySelectorAll(".dream-toki-brand-button").forEach((node) => node.classList.remove("dream-toki-brand-button"));
     document.querySelectorAll(".dream-toki-project-row").forEach((node) => {
@@ -84,12 +109,16 @@
       node.classList.remove("dream-toki-card", "dream-toki-card-1", "dream-toki-card-2", "dream-toki-card-3", "dream-toki-card-4");
       delete node.dataset.dreamTokiCardIndex;
     });
+    document.querySelectorAll(".dream-toki-modern-card").forEach((node) => {
+      node.classList.remove("dream-toki-modern-card", "dream-toki-modern-card-1", "dream-toki-modern-card-2", "dream-toki-modern-card-3", "dream-toki-modern-card-4");
+      delete node.dataset.dreamTokiCardIndex;
+    });
     document.querySelectorAll(".dream-toki-composer-wrap").forEach((node) => node.classList.remove("dream-toki-composer-wrap"));
     decorationsActive = false;
   };
 
   const seedPrompt = (home, prompt) => {
-    const editor = home?.querySelector('.ProseMirror[contenteditable="true"], [contenteditable="true"][role="textbox"]');
+    const editor = home?.querySelector(EDITOR_SELECTOR);
     if (!(editor instanceof HTMLElement)) return;
     editor.focus?.({ preventScroll: true });
     try {
@@ -140,7 +169,8 @@
 
   const decorateSidebar = (sidebar) => {
     sidebar.classList.add("dream-toki-sidebar");
-    const brand = sidebar.querySelector('.dream-toki-brand-button, button[aria-haspopup="menu"]');
+    const brand = sidebar.querySelector(".dream-toki-brand-button") ||
+      (sidebar.matches("aside.app-shell-left-panel") ? sidebar.querySelector('button[aria-haspopup="menu"]') : null);
     if (brand instanceof HTMLElement) {
       brand.classList.add("dream-toki-brand-button");
       const labels = brand.querySelectorAll("span");
@@ -182,9 +212,30 @@
     shellMain.appendChild(figure);
   };
 
-  const findHomeComposer = (home) => home?.querySelector(
-    '.composer-surface-chrome, [contenteditable="true"][role="textbox"]',
-  ) || null;
+  const findHomeComposer = (scope) => {
+    const legacy = scope?.querySelector?.(".composer-surface-chrome");
+    if (legacy) return legacy;
+    const editor = scope?.querySelector?.(EDITOR_SELECTOR);
+    if (!editor) return null;
+    return editor.closest?.("[data-composer-body]") ||
+      editor.closest?.("[data-composer-input-variant]") ||
+      editor.closest?.("[data-composer-layout]") || editor;
+  };
+
+  const findRouteRoot = (anchor, shellMain) => anchor?.closest?.(
+    '[data-app-shell-active-page], [data-app-shell-main-content-layout], [role="main"]',
+  ) || anchor?.closest?.("[data-request-input-activity-root]") || shellMain;
+
+  const findActive = (selector, scope = document) => Array.from(scope.querySelectorAll(selector)).find((node) =>
+    !node.closest?.('[data-app-shell-active-page="false"]')) || null;
+
+  const isSettingsRoute = () => {
+    if (findActive('[data-settings-panel-slug], input[name="appearance-theme"], [data-testid="theme-preview"]')) {
+      return true;
+    }
+    const route = `${location.pathname || ""}${location.search || ""}${location.hash || ""}`;
+    return /(?:^|[/?#])settings(?:[/?#]|$)/i.test(route);
+  };
 
   const ensure = () => {
     if (scheduledTimer) {
@@ -199,16 +250,21 @@
       removeDecorations();
       return;
     }
-    const settings = document.querySelector('[data-settings-panel-slug], input[name="appearance-theme"], [data-testid="theme-preview"]');
-    if (settings) {
+    if (isSettingsRoute()) {
       removeDecorations();
       return;
     }
     const root = document.documentElement;
-    const home = document.querySelector('[data-testid="home-icon"]')?.closest('[role="main"]') || null;
-    const sidebar = document.querySelector("aside.app-shell-left-panel");
-    const shellMain = document.querySelector('main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"])') || home?.closest("main");
-    if (!root || !sidebar || !shellMain) return;
+    const shellMain = document.querySelector(SHELL_MAIN_SELECTOR);
+    if (!root || !shellMain) return;
+    const sidebar = document.querySelector(SIDEBAR_SELECTOR);
+    const modernHomeAnchor = findActive(HOME_ANCHOR_SELECTOR, shellMain);
+    const legacyHomeIcon = findActive('[data-testid="home-icon"]');
+    const legacyHome = legacyHomeIcon?.closest('[role="main"]') || null;
+    const modernHome = modernHomeAnchor ? findRouteRoot(modernHomeAnchor, shellMain) : null;
+    const home = legacyHome || modernHome;
+    const transcript = findActive(TRANSCRIPT_SELECTOR, shellMain);
+    const routeRoot = home || findRouteRoot(transcript || findActive(EDITOR_SELECTOR, shellMain), shellMain);
     root.classList.add(...ROOT_CLASSES.slice(0, -1));
     root.classList.toggle("dream-toki-home", Boolean(home));
     root.style.setProperty("--dream-art", "var(--dream-skin-art)");
@@ -216,23 +272,38 @@
     root.style.setProperty("--dream-accent", "#45bddd");
     root.style.setProperty("--dream-accent-ink", "#ffffff");
     decorationsActive = true;
+    shellMain.classList.add("dream-toki-shell-main");
     shellMain.classList.toggle("dream-home-shell", Boolean(home));
-    document.querySelectorAll('[role="main"]').forEach((node) => {
-      node.classList.toggle("dream-home", node === home);
-      node.classList.toggle("dream-task", node !== home);
+    shellMain.classList.toggle("dream-toki-modern-layout", Boolean(modernHomeAnchor));
+    document.querySelectorAll(".dream-toki-route, .dream-toki-modern-home, .dream-home, .dream-task").forEach((node) => {
+      node.classList.remove("dream-toki-route", "dream-toki-modern-home", "dream-home", "dream-task");
     });
-    const composer = findHomeComposer(home);
-    const homeContent = home ? Array.from(home.children).find((candidate) =>
+    routeRoot?.classList.add("dream-toki-route");
+    routeRoot?.classList.toggle("dream-toki-modern-home", Boolean(modernHomeAnchor));
+    routeRoot?.classList.toggle("dream-home", Boolean(legacyHome));
+    routeRoot?.classList.toggle("dream-task", !home);
+    transcript?.classList.add("dream-toki-transcript");
+    const composer = findHomeComposer(routeRoot || shellMain);
+    composer?.classList.add("dream-toki-composer");
+    const homeContent = legacyHome ? Array.from(legacyHome.children).find((candidate) =>
       candidate.querySelector?.('[data-testid="home-icon"]') && findHomeComposer(candidate)) : null;
     homeContent?.classList.add("dream-home-content");
     home?.classList.toggle("dream-has-utility", Boolean(home.querySelector(".dream-home-utility")));
-    decorateSidebar(sidebar);
-    const cards = home ? Array.from(new Set(home.querySelectorAll('.group\\/home-suggestions button, [data-home-ambient-suggestions] button'))).slice(0, 4) : [];
+    if (sidebar) decorateSidebar(sidebar);
+    const cards = home ? Array.from(new Set(home.querySelectorAll(
+      modernHomeAnchor
+        ? '[data-home-suggestion-id], [data-home-suggestion-group] button'
+        : '.group\\/home-suggestions button, [data-home-ambient-suggestions] button',
+    ))).slice(0, 4) : [];
     cards.forEach((card, index) => {
-      card.classList.add("dream-toki-card", `dream-toki-card-${index + 1}`);
+      if (modernHomeAnchor) {
+        card.classList.add("dream-toki-modern-card", `dream-toki-modern-card-${index + 1}`);
+      } else {
+        card.classList.add("dream-toki-card", `dream-toki-card-${index + 1}`);
+      }
       card.dataset.dreamTokiCardIndex = String(index + 1);
     });
-    ensureFallbackCards(home, cards.length);
+    ensureFallbackCards(legacyHome, cards.length);
     home?.classList.toggle("dream-has-fallback-cards", Boolean(document.getElementById("dream-toki-fallback-cards")));
     let wrapper = composer?.parentElement;
     while (wrapper && wrapper !== home) {
@@ -264,9 +335,11 @@
 
   const collectRunningTasks = () => {
     const rows = new Set();
-    for (const spinner of document.querySelectorAll("aside.app-shell-left-panel .animate-spin")) {
-      const row = spinner.closest?.('[role="listitem"]');
-      if (row) rows.add(row);
+    for (const currentSidebar of document.querySelectorAll(SIDEBAR_SELECTOR)) {
+      for (const spinner of currentSidebar.querySelectorAll(".animate-spin")) {
+        const row = spinner.closest?.('[data-app-action-sidebar-thread-id], [role="listitem"]');
+        if (row) rows.add(row);
+      }
     }
     const titles = [...rows].map((row) => (row.innerText || row.textContent || "")
       .split(/\r?\n/).map((part) => part.trim()).find(Boolean)).filter(Boolean).slice(0, 99);
@@ -289,7 +362,7 @@
     if (activityTimer) clearInterval(activityTimer);
     channel?.close?.();
     removeDecorations();
-    if (window[STATE_KEY]?.cleanup === cleanup) delete window[STATE_KEY];
+    if (window[STATE_KEY]?.ensure === ensure) delete window[STATE_KEY];
     return true;
   };
 
@@ -297,6 +370,14 @@
     channel = new BroadcastChannel(ACTIVITY_CHANNEL);
     activityTimer = setInterval(publishActivity, 2000);
   }
+  const handleNavigation = (event) => {
+    if (event.type !== "click" || event.target?.closest?.(
+      'a[href], [data-app-action-sidebar-thread-id], [data-app-action-sidebar-project-row], [data-testid*="home"]',
+    )) scheduleEnsure();
+  };
+  window.addEventListener("popstate", handleNavigation);
+  window.addEventListener("hashchange", handleNavigation);
+  document.addEventListener("click", handleNavigation, true);
   observer = new MutationObserver((records) => {
     metrics.mutationBatches += 1;
     if (records.some(mutationTouchesSkin)) {
@@ -308,8 +389,15 @@
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   timer = setInterval(() => { if (document.visibilityState === "visible") ensure(); }, 30000);
-  window[STATE_KEY] = { cleanup, ensure, collectRunningTasks, publishActivity, metrics, version: "1.5.11-toki.3" };
+  const originalCleanup = cleanup;
+  const cleanupWithNavigation = () => {
+    window.removeEventListener("popstate", handleNavigation);
+    window.removeEventListener("hashchange", handleNavigation);
+    document.removeEventListener("click", handleNavigation, true);
+    return originalCleanup();
+  };
+  window[STATE_KEY] = { cleanup: cleanupWithNavigation, ensure, collectRunningTasks, publishActivity, metrics, version: "1.5.18-toki.1" };
   ensure();
   publishActivity();
-  return { installed: true, version: "1.5.11-toki.3" };
+  return { installed: true, version: "1.5.18-toki.1" };
 })()

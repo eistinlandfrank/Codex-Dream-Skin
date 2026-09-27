@@ -74,3 +74,27 @@ test("Toki resize path avoids full-tree relational matching and layout reads", a
   assert.match(enhancer, /contenteditable=\"true\".*role=\"textbox\"/);
   assert.match(enhancer, /findHomeComposer/);
 });
+
+test("Toki targets the stable Codex 26.924 shell and composer attributes", async () => {
+  const [css, enhancer] = await Promise.all([
+    fs.readFile(path.join(assets, "toki-skin.css"), "utf8"),
+    fs.readFile(path.join(assets, "toki-enhancements.js"), "utf8"),
+  ]);
+  for (const selector of [
+    "data-app-shell-main-surface",
+    "app-shell-floating-left-panel",
+    "home-composer-anchor",
+    "data-thread-user-message-navigation-content",
+    "data-composer-body",
+    "data-codex-composer",
+    "data-home-suggestion-id",
+  ]) {
+    assert.match(enhancer, new RegExp(selector));
+  }
+  assert.match(enhancer, /dream-toki-modern-layout/);
+  assert.match(enhancer, /version: "1\.5\.18-toki\.1"/);
+  assert.match(css, /--color-text-primary: var\(--dream-text\)/);
+  assert.match(css, /\.dream-toki-composer/);
+  assert.match(css, /\.dream-toki-transcript/);
+  assert.match(css, /\.dream-toki-modern-card/);
+});
